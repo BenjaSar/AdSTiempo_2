@@ -1,0 +1,7 @@
+/adst2/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+**/*.pth
+**/models/
