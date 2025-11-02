@@ -269,8 +269,8 @@ class BitcoinEDA:
                    ax=ax5, cbar_kws={'shrink': 0.8}, vmin=-1, vmax=1)
         ax5.set_title('Feature Correlation Matrix', fontsize=14, fontweight='bold')
         
-        plt.savefig('informer/01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: informer/01_comprehensive_eda.png")
+        plt.savefig('informer/informer/01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
+        print("   ✅ Saved: informer/informer/01_comprehensive_eda.png")
         plt.close()
         
         # Figure 2: Advanced Analysis
@@ -336,8 +336,8 @@ class BitcoinEDA:
         axes[1, 1].grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig('informer/02_advanced_analysis.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: informer/02_advanced_analysis.png")
+        plt.savefig('informer/informer/02_advanced_analysis.png', dpi=300, bbox_inches='tight')
+        print("   ✅ Saved: informer/informer/02_advanced_analysis.png")
         plt.close()
         
         print()
@@ -961,7 +961,7 @@ class InformerEvaluator:
         print("─" * 80 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, save_path='informer/03_predictions.png'):
+    def plot_predictions(predictions, actuals, save_path='informer/informer/03_predictions.png'):
         """Plot predictions"""
         pred_len = predictions.shape[1]
         n_plots = min(pred_len, 4)

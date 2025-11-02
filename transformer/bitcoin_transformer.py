@@ -254,7 +254,7 @@ class BitcoinEDA:
                    ax=ax5, cbar_kws={'shrink': 0.8}, vmin=-1, vmax=1)
         ax5.set_title('Feature Correlation Matrix', fontsize=14, fontweight='bold')
         
-        plt.savefig('01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
+        plt.savefig('transformer/v1/01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: 01_comprehensive_eda.png")
         plt.close()
         
@@ -321,7 +321,7 @@ class BitcoinEDA:
         axes[1, 1].grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig('02_advanced_analysis.png', dpi=300, bbox_inches='tight')
+        plt.savefig('transformer/v1/02_advanced_analysis.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: 02_advanced_analysis.png")
         plt.close()
         
@@ -628,7 +628,7 @@ class TransformerTrainer:
             # Early stopping check
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'best_bitcoin_model.pth')
+                torch.save(self.model.state_dict(), 'transformer/best_bitcoin_model.pth')
                 patience_counter = 0
                 status = "✅ (saved)"
             else:
@@ -683,7 +683,7 @@ class TransformerTrainer:
         ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig('03_training_history.png', dpi=300, bbox_inches='tight')
+        plt.savefig('transformer/v1/03_training_history.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: 03_training_history.png\n")
         plt.close()
 
@@ -812,7 +812,7 @@ class Evaluator:
         print("─" * 80 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, dates, save_path='04_predictions.png'):
+    def plot_predictions(predictions, actuals, dates, save_path='transformer/v1/04_predictions.png'):
         """Visualize predictions"""
         pred_len = predictions.shape[1]
         n_plots = min(pred_len, 4)
@@ -848,7 +848,7 @@ class Evaluator:
         plt.close()
     
     @staticmethod
-    def plot_error_analysis(predictions, actuals, dates, save_path='05_error_analysis.png'):
+    def plot_error_analysis(predictions, actuals, dates, save_path='transformer/v1/05_error_analysis.png'):
         """Analyze prediction errors"""
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
@@ -964,7 +964,7 @@ class FutureForecaster:
     
     @staticmethod
     def plot_forecast(historical_data, historical_dates, forecasts, 
-                     forecast_dates, save_path='06_future_forecast.png'):
+                     forecast_dates, save_path='transformer/v1/06_future_forecast.png'):
         """Visualize future forecast"""
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 12))
         
@@ -1172,7 +1172,7 @@ def main():
     # ========================================
     # LOAD BEST MODEL & EVALUATE
     # ========================================
-    model.load_state_dict(torch.load('best_bitcoin_model.pth'))
+    model.load_state_dict(torch.load('transformer/best_bitcoin_model.pth'))
     
     close_idx = feature_cols.index('Close')
     predictions, actuals, metrics = Evaluator.evaluate(
@@ -1378,7 +1378,7 @@ class FeatureImportance:
         ax.grid(True, alpha=0.3, axis='x')
         
         plt.tight_layout()
-        plt.savefig('07_feature_importance.png', dpi=300, bbox_inches='tight')
+        plt.savefig('transformer/v1/07_feature_importance.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: 07_feature_importance.png\n")
         plt.close()
 
@@ -1514,7 +1514,7 @@ if __name__ == "__main__":
             )
         
         print("\n" + "╔" + "═" * 78 + "╗")
-        print("║" + " " * 20 + "ALL ANALYSES COMPLETED SUCCESSFULLY!" + " " * 21 + "║")
+        print("║" + " " * 20 + "ALL ANALYSES COMPLETED SUCCESSFULLY!" + " " * 22 + "║")
         print("╚" + "═" * 78 + "╝\n")
         
     except KeyboardInterrupt:

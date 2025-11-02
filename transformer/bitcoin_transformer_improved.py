@@ -235,7 +235,7 @@ class ImprovedTrainer:
             
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'best_improved_model.pth')
+                torch.save(self.model.state_dict(), 'transformer/best_improved_model.pth')
                 patience_counter = 0
                 status = "✅"
             else:
@@ -384,7 +384,7 @@ class ImprovedEvaluator:
         print("─" * 90 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, save_path='improved_predictions.png'):
+    def plot_predictions(predictions, actuals, save_path='transformer/v2/improved_predictions.png'):
         """Plot price predictions"""
         pred_len = min(predictions.shape[1], 4)
         
@@ -418,7 +418,7 @@ class ImprovedEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_error_analysis(predictions, actuals, save_path='improved_error_analysis.png'):
+    def plot_error_analysis(predictions, actuals, save_path='transformer/v2/improved_error_analysis.png'):
         """Analyze prediction errors"""
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
@@ -477,7 +477,7 @@ class ImprovedEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_training_history(train_losses, val_losses, save_path='improved_training_history.png'):
+    def plot_training_history(train_losses, val_losses, save_path='transformer/v2/improved_training_history.png'):
         """Plot training history"""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
         
@@ -631,7 +631,7 @@ def main():
     )
     
     # Evaluate
-    model.load_state_dict(torch.load('best_improved_model.pth'))
+    model.load_state_dict(torch.load('transformer/best_improved_model.pth'))
     predictions, actuals, metrics = ImprovedEvaluator.evaluate(
         model, test_loader, device, returns_scaler
     )

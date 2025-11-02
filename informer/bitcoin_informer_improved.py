@@ -29,11 +29,12 @@ warnings.filterwarnings('ignore')
 
 # Import from original informer
 import sys
-sys.path.append('..')
-from bitcoin_transformer import BitcoinDataLoader
+#sys.path.append('..')
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from transformer.bitcoin_transformer import BitcoinDataLoader
 
 # Import Informer architecture from bitcoin_informer
-from bitcoin_informer import Informer
+from informer.bitcoin_informer import Informer
 
 plt.style.use('seaborn-v0_8-darkgrid')
 torch.manual_seed(42)
@@ -42,7 +43,7 @@ np.random.seed(42)
 print("""
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║        IMPROVED INFORMER - RETURNS-BASED FORECASTING                         ║
+║        IMPROVED INFORMER - RETURNS-BASED FORECASTING                          ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """)
@@ -398,7 +399,7 @@ class ImprovedInformerEvaluator:
         print("─" * 90 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, save_path='informer/improved_predictions.png'):
+    def plot_predictions(predictions, actuals, save_path='informer/informer/improved_predictions.png'):
         """Plot price predictions"""
         pred_len = min(predictions.shape[1], 4)
         
@@ -432,7 +433,7 @@ class ImprovedInformerEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_error_analysis(predictions, actuals, save_path='informer/improved_error_analysis.png'):
+    def plot_error_analysis(predictions, actuals, save_path='informer/informer/improved_error_analysis.png'):
         """Analyze prediction errors"""
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
@@ -490,7 +491,7 @@ class ImprovedInformerEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_training_history(train_losses, val_losses, save_path='informer/improved_training_history.png'):
+    def plot_training_history(train_losses, val_losses, save_path='informer/informer/improved_training_history.png'):
         """Plot training history"""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
         
