@@ -24,17 +24,19 @@ warnings.filterwarnings('ignore')
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
 
+ventanas = None
+
 print("""
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
 ║          BITCOIN FORECAST COMPARISON - MULTIPLE PREDICTION WINDOWS            ║
-║                     Comparing pred_len: 7, 10, 30, 45 days                   ║
+║                     Comparing pred_len: 7, 10, 30, 45 days                    ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """)
 
 # Import necessary classes from main script
-from bitcoin_transformer import (
+from transformer.bitcoin_transformer import (
     BitcoinDataLoader, FeatureEngineer, TimeSeriesDataset, 
     TimeSeriesTransformer, TransformerTrainer, Evaluator
 )
@@ -42,12 +44,14 @@ from bitcoin_transformer import (
 
 class ForecastComparator:
     """Compare forecasting results across different prediction windows"""
-    
+    global ventanas
+    print(ventanas)
+
     def __init__(self, pred_lengths=[7, 30, 45]):
         self.pred_lengths = pred_lengths
         self.results = {}
         
-    def load_results(self, results_dir='ventanas'):
+    def load_results(self, results_dir=ventanas):
         """Load pre-computed results from saved files"""
         print("╔═══════════════════════════════════════════════════════════════════════════════╗")
         print("║                    LOADING PRE-COMPUTED RESULTS                               ║")
@@ -443,13 +447,16 @@ class ForecastComparator:
 
 def main():
     """Main execution - loads pre-trained results and creates comparison plots"""
-    
+    global ventanas
+    ventanas = 'v1' # Directory where results are stored
+    print("Loading results from directory:", ventanas)
+
     # Create comparator
     comparator = ForecastComparator(pred_lengths=[7, 30, 45])
     
     # Load pre-computed results from ventanas directory
     try:
-        comparator.load_results(results_dir='ventanas')
+        comparator.load_results(results_dir=ventanas)
     except ValueError as e:
         print(f"❌ {e}")
         print("\n💡 To generate results, run bitcoin_transformer.py with different pred_len values:")
