@@ -10,12 +10,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import os
+import sys
 from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
@@ -23,6 +23,17 @@ warnings.filterwarnings('ignore')
 # Set style
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
+
+# Adjust sys.path to import from project root
+current_dir = os.path.dirname(os.path.abspath(__file__)) # Get the directory of the current script (forecast_windows/)
+project_root = os.path.join(current_dir, '..') # Get the path to the project root (the directory above the current one)
+sys.path.append(project_root) # Add the project root to Python's search path
+
+# Import necessary classes from main script
+from transformer.bitcoin_transformer import (
+    BitcoinDataLoader, FeatureEngineer, TimeSeriesDataset, 
+    TimeSeriesTransformer, TransformerTrainer, Evaluator
+)
 
 ventanas = None
 
@@ -34,13 +45,6 @@ print("""
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """)
-
-# Import necessary classes from main script
-from transformer.bitcoin_transformer import (
-    BitcoinDataLoader, FeatureEngineer, TimeSeriesDataset, 
-    TimeSeriesTransformer, TransformerTrainer, Evaluator
-)
-
 
 class ForecastComparator:
     """Compare forecasting results across different prediction windows"""
@@ -196,7 +200,7 @@ class ForecastComparator:
                    f'{val:.3f}', ha='center', va='bottom', fontsize=10)
         
         plt.tight_layout()
-        plt.savefig('comparison_metrics.png', dpi=300, bbox_inches='tight')
+        plt.savefig('./results/comparison_metrics.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: comparison_metrics.png")
         plt.close()
     
@@ -248,7 +252,7 @@ class ForecastComparator:
                            alpha=0.2, color='red' if np.mean(errors) > 0 else 'green')
         
         plt.tight_layout()
-        plt.savefig('comparison_predictions.png', dpi=300, bbox_inches='tight')
+        plt.savefig('./results/comparison_predictions.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: comparison_predictions.png")
         plt.close()
         
@@ -284,7 +288,7 @@ class ForecastComparator:
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
         
         plt.tight_layout()
-        plt.savefig('comparison_predictions_summary.png', dpi=300, bbox_inches='tight')
+        plt.savefig('./results/comparison_predictions_summary.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: comparison_predictions_summary.png")
         plt.close()
     
@@ -368,7 +372,7 @@ class ForecastComparator:
                    f'${val:,.0f}', ha='center', va='bottom', fontsize=10)
         
         plt.tight_layout()
-        plt.savefig('comparison_errors.png', dpi=300, bbox_inches='tight')
+        plt.savefig('./results/comparison_errors.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: comparison_errors.png")
         plt.close()
     
@@ -409,7 +413,7 @@ class ForecastComparator:
         ax.set_yscale('log')
         
         plt.tight_layout()
-        plt.savefig('comparison_training.png', dpi=300, bbox_inches='tight')
+        plt.savefig('./results/comparison_training.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: comparison_training.png")
         plt.close()
     
@@ -448,7 +452,7 @@ class ForecastComparator:
 def main():
     """Main execution - loads pre-trained results and creates comparison plots"""
     global ventanas
-    ventanas = 'v1' # Directory where results are stored
+    ventanas = 'results' # Directory where results are stored
     print("Loading results from directory:", ventanas)
 
     # Create comparator

@@ -384,7 +384,7 @@ class ImprovedEvaluator:
         print("─" * 90 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, save_path='transformer/v2/improved_predictions.png'):
+    def plot_predictions(predictions, actuals, save_path='transformer/results/improved_predictions.png'):
         """Plot price predictions"""
         pred_len = min(predictions.shape[1], 4)
         
@@ -418,7 +418,7 @@ class ImprovedEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_error_analysis(predictions, actuals, save_path='transformer/v2/improved_error_analysis.png'):
+    def plot_error_analysis(predictions, actuals, save_path='transformer/results/improved_error_analysis.png'):
         """Analyze prediction errors"""
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
@@ -477,7 +477,7 @@ class ImprovedEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_training_history(train_losses, val_losses, save_path='transformer/v2/improved_training_history.png'):
+    def plot_training_history(train_losses, val_losses, save_path='transformer/results/improved_training_history.png'):
         """Plot training history"""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
         
