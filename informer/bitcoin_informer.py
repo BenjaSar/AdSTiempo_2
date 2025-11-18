@@ -1,849 +1,251 @@
 """
-Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting
-Production-Ready Implementation with Bitcoin Price Prediction
+Improved Informer for Bitcoin Forecasting with Better Preprocessing and Training
 
-Based on: "Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting"
-(Zhou et al., 2021)
-
-Key Features:
-- ProbSparse Self-Attention (O(L log L) complexity)
-- Self-attention distilling for efficiency
-- Generative style decoder
-- Complete EDA and visualization suite
-
-Requirements:
-pip install torch numpy pandas matplotlib seaborn scikit-learn yfinance scipy
+Key Improvements (same as Transformer improved):
+- Train on log-returns instead of raw prices
+- Use MinMaxScaler for better normalization
+- Huber loss for robustness
+- Learning rate warmup + cosine decay
+- Optimized sequence length (10 days)
+- Better feature engineering
 
 Usage:
-python bitcoin_informer.py
+python informer/bitcoin_informer.py
 """
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime, timedelta
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import os
 import warnings
 warnings.filterwarnings('ignore')
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import math
+# Import from original informer
+import sys
+#sys.path.append('..')
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from transformer.bitcoin_transformer import BitcoinDataLoader
 
-# Try to import yfinance for real data
-try:
-    import yfinance as yf
-    YFINANCE_AVAILABLE = True
-except ImportError:
-    YFINANCE_AVAILABLE = False
-    print("⚠️  yfinance not available. Install with: pip install yfinance")
-    print("   Using synthetic data instead...\n")
+# Import Informer architecture from bitcoin_informer
+from informer.bitcoin_informer import Informer
 
-# Set style
 plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
-
-# Set random seeds
 torch.manual_seed(42)
 np.random.seed(42)
 
 print("""
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║           INFORMER: EFFICIENT LONG-SEQUENCE FORECASTING                       ║
-║                     Production Implementation v1.0                            ║
+║        IMPROVED INFORMER - RETURNS-BASED FORECASTING                          ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """)
 
+
 # ============================================================================
-# DATA LOADER
+# IMPROVED FEATURE ENGINEERING (same as transformer improved)
 # ============================================================================
 
-class BitcoinDataLoader:
-    """Load Bitcoin data from Yahoo Finance or generate synthetic data"""
+class ImprovedFeatureEngineer:
+    """Enhanced feature engineering focused on returns and volatility"""
     
     @staticmethod
-    def load_real_data(start_date='2020-01-01', end_date=None):
-        """Load real Bitcoin data from Yahoo Finance"""
-        if not YFINANCE_AVAILABLE:
-            return None
+    def create_features(df):
+        """Create features based on returns"""
+        print("🔧 Creating return-based features...")
         
-        try:
-            print(f"📥 Downloading Bitcoin data from {start_date} to {end_date or 'today'}...")
-            btc = yf.download('BTC-USD', start=start_date, end=end_date, progress=False)
-            
-            if len(btc) == 0:
-                print("⚠️  No data returned from Yahoo Finance")
-                return None
-            
-            # Rename columns to standard format
-            df = btc[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
-            df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-            
-            print(f"✅ Downloaded {len(df)} days of Bitcoin data")
-            print(f"   Date range: {df.index.min().date()} to {df.index.max().date()}")
-            print(f"   Latest price: ${df['Close'].iloc[-1]:,.2f}\n")
-            
-            return df
-            
-        except Exception as e:
-            print(f"⚠️  Error downloading data: {e}")
-            return None
-    
-    @staticmethod
-    def generate_synthetic_data(start_date='2020-01-01', end_date='2024-10-01'):
-        """Generate realistic synthetic Bitcoin data"""
-        print("🔧 Generating synthetic Bitcoin data...")
+        df = df.copy()
         
-        dates = pd.date_range(start=start_date, end=end_date, freq='D')
-        n = len(dates)
+        # 1. Log returns (primary feature)
+        df['Returns'] = np.log(df['Close'] / df['Close'].shift(1))
         
-        # Realistic Bitcoin price simulation
-        np.random.seed(42)
+        # 2. Volume changes
+        df['Volume_Change'] = np.log(df['Volume'] / df['Volume'].shift(1))
         
-        # Components
-        trend = np.linspace(10000, 65000, n)  # Long-term uptrend
-        seasonal = 5000 * np.sin(2 * np.pi * np.arange(n) / 365)  # Annual cycle
-        cycles = 3000 * np.sin(2 * np.pi * np.arange(n) / 90)  # Quarterly cycle
-        noise = np.random.normal(0, 1500, n).cumsum() * 0.15  # Random walk
-        volatility = np.random.normal(0, 800, n)  # Daily volatility
+        # 3. Volatility measures
+        for window in [5, 10, 20]:
+            df[f'Volatility_{window}'] = df['Returns'].rolling(window).std()
+            df[f'Volume_Vol_{window}'] = df['Volume_Change'].rolling(window).std()
         
-        # Combine components
-        close_price = trend + seasonal + cycles + noise + volatility
-        close_price = np.maximum(close_price, 5000)  # Floor price
+        # 4. Moving averages of returns
+        for window in [5, 10, 20]:
+            df[f'MA_Returns_{window}'] = df['Returns'].rolling(window).mean()
         
-        # Generate OHLC
-        df = pd.DataFrame({
-            'Open': close_price * (1 + np.random.uniform(-0.015, 0.015, n)),
-            'High': close_price * (1 + np.random.uniform(0.005, 0.025, n)),
-            'Low': close_price * (1 + np.random.uniform(-0.025, -0.005, n)),
-            'Close': close_price,
-            'Volume': np.random.uniform(2e9, 5e10, n)
-        }, index=dates)
+        # 5. Momentum
+        for period in [5, 10, 20]:
+            df[f'Momentum_{period}'] = df['Returns'].rolling(period).sum()
         
-        # Ensure High >= Close >= Low
-        df['High'] = df[['High', 'Close', 'Open']].max(axis=1)
-        df['Low'] = df[['Low', 'Close', 'Open']].min(axis=1)
+        # 6. RSI on returns
+        for period in [14]:
+            delta = df['Returns']
+            gain = delta.where(delta > 0, 0).rolling(period).mean()
+            loss = -delta.where(delta < 0, 0).rolling(period).mean()
+            rs = gain / (loss + 1e-10)
+            df[f'RSI_{period}'] = 100 - (100 / (1 + rs))
         
-        print(f"✅ Generated {len(df)} days of synthetic data")
-        print(f"   Date range: {df.index.min().date()} to {df.index.max().date()}\n")
+        # 7. Price range as percentage
+        df['Price_Range'] = (df['High'] - df['Low']) / df['Close']
         
-        return df
-    
-    @classmethod
-    def load_data(cls, use_real_data=True, start_date='2020-01-01', end_date=None):
-        """Load data (real if available, otherwise synthetic)"""
-        if use_real_data and YFINANCE_AVAILABLE:
-            df = cls.load_real_data(start_date, end_date)
-            if df is not None:
-                return df, True
+        # Drop NaN
+        df = df.dropna()
         
-        # Fallback to synthetic data
-        return cls.generate_synthetic_data(start_date, end_date or '2024-10-01'), False
+        # Select features for modeling
+        feature_cols = [
+            'Returns', 'Volume_Change', 'Price_Range',
+            'Volatility_5', 'Volatility_10', 'Volatility_20',
+            'MA_Returns_5', 'MA_Returns_10', 'MA_Returns_20',
+            'Momentum_5', 'Momentum_10', 'Momentum_20',
+            'RSI_14'
+        ]
+        
+        print(f"   ✅ Created {len(feature_cols)} features")
+        print(f"   ✅ Valid samples: {len(df)}\n")
+        
+        return df[feature_cols], df['Close']
 
 
 # ============================================================================
-# EDA MODULE
+# IMPROVED DATASET (same as transformer improved)
 # ============================================================================
 
-class BitcoinEDA:
-    """Comprehensive Exploratory Data Analysis"""
+class InformerReturnsDataset(Dataset):
+    """Dataset for Informer with returns-based forecasting"""
     
-    def __init__(self, df, is_real_data=False):
-        self.df = df.copy()
-        self.is_real_data = is_real_data
-        
-    def run_full_eda(self):
-        """Execute complete EDA pipeline"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                      STEP 1: EXPLORATORY DATA ANALYSIS                        ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
-        self._basic_stats()
-        self._analyze_returns()
-        self._plot_comprehensive_eda()
-        
-    def _basic_stats(self):
-        """Display basic statistics"""
-        print("📊 BASIC STATISTICS")
-        print("─" * 80)
-        print(f"Dataset Shape: {self.df.shape[0]} days × {self.df.shape[1]} features")
-        print(f"Date Range: {self.df.index.min().date()} to {self.df.index.max().date()}")
-        print(f"Trading Days: {len(self.df)}")
-        print(f"Data Type: {'Real (Yahoo Finance)' if self.is_real_data else 'Synthetic'}")
-        print(f"\nMissing Values:\n{self.df.isnull().sum()}")
-        
-        print(f"\nPrice Statistics:")
-        print(f"  Current Price: ${self.df['Close'].iloc[-1]:,.2f}")
-        print(f"  Highest Price: ${self.df['High'].max():,.2f}")
-        print(f"  Lowest Price: ${self.df['Low'].min():,.2f}")
-        print(f"  Average Price: ${self.df['Close'].mean():,.2f}")
-        print(f"  Std Deviation: ${self.df['Close'].std():,.2f}")
-        
-    def _analyze_returns(self):
-        """Analyze return characteristics"""
-        returns = self.df['Close'].pct_change().dropna()
-        
-        print(f"\n📈 RETURNS ANALYSIS")
-        print("─" * 80)
-        print(f"Mean Daily Return: {returns.mean()*100:.3f}%")
-        print(f"Daily Volatility: {returns.std()*100:.3f}%")
-        print(f"Annualized Return: {returns.mean()*365*100:.2f}%")
-        print(f"Annualized Volatility: {returns.std()*np.sqrt(365)*100:.2f}%")
-        print(f"Sharpe Ratio (Rf=0): {returns.mean()/returns.std()*np.sqrt(365):.3f}")
-        print(f"Max Daily Gain: {returns.max()*100:.2f}%")
-        print(f"Max Daily Loss: {returns.min()*100:.2f}%")
-        
-    def _plot_comprehensive_eda(self):
-        """Create comprehensive EDA visualizations"""
-        print(f"\n📊 Creating visualizations...")
-        
-        # Create output directory if it doesn't exist
-        os.makedirs('informer', exist_ok=True)
-        
-        # Figure 1: Price Analysis
-        fig1 = plt.figure(figsize=(18, 12))
-        gs1 = fig1.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
-        
-        # 1.1 Price trend with volume
-        ax1 = fig1.add_subplot(gs1[0, :])
-        ax1.plot(self.df.index, self.df['Close'], label='Close Price', 
-                color='#2E86AB', linewidth=2)
-        ax1.fill_between(self.df.index, self.df['Low'], self.df['High'], 
-                         alpha=0.2, color='#A23B72')
-        ax1.set_title('Bitcoin Price Trend with High-Low Range', 
-                     fontsize=16, fontweight='bold', pad=20)
-        ax1.set_ylabel('Price (USD)', fontsize=12)
-        ax1.legend(loc='upper left', fontsize=10)
-        ax1.grid(True, alpha=0.3)
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
-        
-        # Volume on secondary axis
-        ax1_vol = ax1.twinx()
-        ax1_vol.bar(self.df.index, self.df['Volume'], alpha=0.3, color='green', 
-                   label='Volume')
-        ax1_vol.set_ylabel('Volume', fontsize=12)
-        ax1_vol.legend(loc='upper right', fontsize=10)
-        
-        # 1.2 Returns distribution
-        ax2 = fig1.add_subplot(gs1[1, 0])
-        returns = self.df['Close'].pct_change().dropna()
-        ax2.hist(returns, bins=50, color='#F18F01', alpha=0.7, edgecolor='black')
-        ax2.axvline(returns.mean(), color='red', linestyle='--', linewidth=2, 
-                   label=f'Mean: {returns.mean()*100:.3f}%')
-        ax2.set_title('Daily Returns Distribution', fontsize=14, fontweight='bold')
-        ax2.set_xlabel('Daily Return')
-        ax2.set_ylabel('Frequency')
-        ax2.legend()
-        ax2.grid(True, alpha=0.3)
-        
-        # 1.3 QQ plot
-        ax3 = fig1.add_subplot(gs1[1, 1])
-        from scipy import stats
-        stats.probplot(returns, dist="norm", plot=ax3)
-        ax3.set_title('Q-Q Plot (Normality Check)', fontsize=14, fontweight='bold')
-        ax3.grid(True, alpha=0.3)
-        
-        # 1.4 Rolling volatility
-        ax4 = fig1.add_subplot(gs1[2, 0])
-        volatility_30 = returns.rolling(window=30).std() * np.sqrt(365) * 100
-        ax4.plot(self.df.index[1:], volatility_30, color='#C73E1D', linewidth=2)
-        ax4.set_title('30-Day Rolling Volatility (Annualized)', 
-                     fontsize=14, fontweight='bold')
-        ax4.set_ylabel('Volatility (%)')
-        ax4.set_xlabel('Date')
-        ax4.grid(True, alpha=0.3)
-        ax4.fill_between(self.df.index[1:], volatility_30, alpha=0.3, color='#C73E1D')
-        
-        # 1.5 Correlation heatmap
-        ax5 = fig1.add_subplot(gs1[2, 1])
-        corr = self.df[['Open', 'High', 'Low', 'Close', 'Volume']].corr()
-        sns.heatmap(corr, annot=True, fmt='.3f', cmap='RdYlGn', center=0, 
-                   ax=ax5, cbar_kws={'shrink': 0.8}, vmin=-1, vmax=1)
-        ax5.set_title('Feature Correlation Matrix', fontsize=14, fontweight='bold')
-        
-        plt.savefig('informer/informer/01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: informer/informer/01_comprehensive_eda.png")
-        plt.close()
-        
-        # Figure 2: Advanced Analysis
-        self._plot_advanced_analysis()
-        
-    def _plot_advanced_analysis(self):
-        """Advanced analysis plots"""
-        fig2, axes = plt.subplots(2, 2, figsize=(16, 10))
-        
-        # 2.1 Moving averages
-        axes[0, 0].plot(self.df.index, self.df['Close'], label='Close', 
-                       linewidth=1.5, alpha=0.7)
-        axes[0, 0].plot(self.df.index, self.df['Close'].rolling(7).mean(), 
-                       label='MA-7', linewidth=2)
-        axes[0, 0].plot(self.df.index, self.df['Close'].rolling(30).mean(), 
-                       label='MA-30', linewidth=2)
-        axes[0, 0].plot(self.df.index, self.df['Close'].rolling(90).mean(), 
-                       label='MA-90', linewidth=2)
-        axes[0, 0].set_title('Moving Averages', fontsize=14, fontweight='bold')
-        axes[0, 0].set_ylabel('Price (USD)')
-        axes[0, 0].legend()
-        axes[0, 0].grid(True, alpha=0.3)
-        
-        # 2.2 Seasonality (Day of Week)
-        df_temp = self.df.copy()
-        df_temp['DayOfWeek'] = df_temp.index.dayofweek
-        df_temp['Returns'] = df_temp['Close'].pct_change()
-        day_returns = df_temp.groupby('DayOfWeek')['Returns'].mean() * 100
-        days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        colors = ['green' if x > 0 else 'red' for x in day_returns]
-        axes[0, 1].bar(range(7), day_returns, color=colors, alpha=0.7, edgecolor='black')
-        axes[0, 1].set_xticks(range(7))
-        axes[0, 1].set_xticklabels(days)
-        axes[0, 1].set_title('Average Returns by Day of Week', 
-                            fontsize=14, fontweight='bold')
-        axes[0, 1].set_ylabel('Average Return (%)')
-        axes[0, 1].axhline(0, color='black', linestyle='--', linewidth=1)
-        axes[0, 1].grid(True, alpha=0.3, axis='y')
-        
-        # 2.3 Monthly seasonality
-        df_temp['Month'] = df_temp.index.month
-        month_returns = df_temp.groupby('Month')['Returns'].mean() * 100
-        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        colors = ['green' if x > 0 else 'red' for x in month_returns]
-        axes[1, 0].bar(range(1, 13), month_returns, color=colors, alpha=0.7, 
-                      edgecolor='black')
-        axes[1, 0].set_xticks(range(1, 13))
-        axes[1, 0].set_xticklabels(months, rotation=45)
-        axes[1, 0].set_title('Average Returns by Month', fontsize=14, fontweight='bold')
-        axes[1, 0].set_ylabel('Average Return (%)')
-        axes[1, 0].axhline(0, color='black', linestyle='--', linewidth=1)
-        axes[1, 0].grid(True, alpha=0.3, axis='y')
-        
-        # 2.4 Cumulative returns
-        cumulative_returns = (1 + df_temp['Returns'].fillna(0)).cumprod()
-        axes[1, 1].plot(self.df.index, cumulative_returns, linewidth=2, color='#2E86AB')
-        axes[1, 1].fill_between(self.df.index, 1, cumulative_returns, alpha=0.3)
-        axes[1, 1].set_title('Cumulative Returns', fontsize=14, fontweight='bold')
-        axes[1, 1].set_ylabel('Cumulative Return')
-        axes[1, 1].set_xlabel('Date')
-        axes[1, 1].axhline(1, color='black', linestyle='--', linewidth=1)
-        axes[1, 1].grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.savefig('informer/informer/02_advanced_analysis.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: informer/informer/02_advanced_analysis.png")
-        plt.close()
-        
-        print()
-
-
-# ============================================================================
-# INFORMER ARCHITECTURE COMPONENTS
-# ============================================================================
-
-class TriangularCausalMask:
-    """Triangular causal mask for decoder"""
-    
-    def __init__(self, B, L, device="cpu"):
-        mask_shape = [B, 1, L, L]
-        with torch.no_grad():
-            self._mask = torch.triu(torch.ones(mask_shape, dtype=torch.bool), diagonal=1).to(device)
-    
-    @property
-    def mask(self):
-        return self._mask
-
-
-class ProbMask:
-    """Probability mask for ProbSparse attention"""
-    
-    def __init__(self, B, H, L, index, scores, device="cpu"):
-        _mask = torch.ones(L, scores.shape[-1], dtype=torch.bool).to(device).triu(1)
-        _mask_ex = _mask[None, None, :].expand(B, H, L, scores.shape[-1])
-        indicator = _mask_ex[torch.arange(B)[:, None, None],
-                            torch.arange(H)[None, :, None],
-                            index, :].to(device)
-        self._mask = indicator.view(scores.shape).to(device)
-    
-    @property
-    def mask(self):
-        return self._mask
-
-
-class ProbAttention(nn.Module):
-    """
-    ProbSparse Self-Attention
-    Key innovation: Only compute attention for top-u queries
-    Reduces complexity from O(L^2) to O(L log L)
-    """
-    
-    def __init__(self, mask_flag=True, factor=5, scale=None, 
-                 attention_dropout=0.1, output_attention=False):
-        super().__init__()
-        self.factor = factor
-        self.scale = scale
-        self.mask_flag = mask_flag
-        self.output_attention = output_attention
-        self.dropout = nn.Dropout(attention_dropout)
-        
-    def _prob_QK(self, Q, K, sample_k, n_top):
-        B, H, L_K, E = K.shape
-        _, _, L_Q, _ = Q.shape
-        
-        K_expand = K.unsqueeze(-3).expand(B, H, L_Q, L_K, E)
-        index_sample = torch.randint(L_K, (L_Q, sample_k))
-        K_sample = K_expand[:, :, torch.arange(L_Q).unsqueeze(1), index_sample, :]
-        
-        Q_K_sample = torch.matmul(Q.unsqueeze(-2), K_sample.transpose(-2, -1)).squeeze(-2)
-        
-        M = Q_K_sample.max(-1)[0] - torch.div(Q_K_sample.sum(-1), L_K)
-        M_top = M.topk(n_top, sorted=False)[1]
-        
-        Q_reduce = Q[torch.arange(B)[:, None, None],
-                     torch.arange(H)[None, :, None],
-                     M_top, :]
-        
-        Q_K = torch.matmul(Q_reduce, K.transpose(-2, -1))
-        
-        return Q_K, M_top
-    
-    def _get_initial_context(self, V, L_Q):
-        B, H, L_V, D = V.shape
-        
-        if not self.mask_flag:
-            V_sum = V.mean(dim=-2)
-            context = V_sum.unsqueeze(-2).expand(B, H, L_Q, V_sum.shape[-1]).clone()
-        else:
-            assert(L_Q == L_V)
-            context = V.cumsum(dim=-2)
-        
-        return context
-    
-    def _update_context(self, context_in, V, scores, index, L_Q, attn_mask):
-        B, H, L_V, D = V.shape
-        
-        if self.mask_flag:
-            attn_mask = ProbMask(B, H, L_Q, index, scores, device=V.device)
-            scores.masked_fill_(attn_mask.mask, -np.inf)
-        
-        attn = torch.softmax(scores, dim=-1)
-        
-        context_in[torch.arange(B)[:, None, None],
-                   torch.arange(H)[None, :, None],
-                   index, :] = torch.matmul(attn, V).type_as(context_in)
-        
-        if self.output_attention:
-            attns = (torch.ones([B, H, L_V, L_V]) / L_V).type_as(attn).to(attn.device)
-            attns[torch.arange(B)[:, None, None], 
-                  torch.arange(H)[None, :, None],
-                  index, :] = attn
-            return context_in, attns
-        else:
-            return context_in, None
-    
-    def forward(self, queries, keys, values, attn_mask=None):
-        B, L_Q, H, D = queries.shape
-        _, L_K, _, _ = keys.shape
-        
-        queries = queries.transpose(2, 1)
-        keys = keys.transpose(2, 1)
-        values = values.transpose(2, 1)
-        
-        U_part = self.factor * np.ceil(np.log(L_K)).astype('int').item()
-        u = self.factor * np.ceil(np.log(L_Q)).astype('int').item()
-        
-        U_part = U_part if U_part < L_K else L_K
-        u = u if u < L_Q else L_Q
-        
-        scores_top, index = self._prob_QK(queries, keys, sample_k=U_part, n_top=u)
-        
-        scale = self.scale or 1. / math.sqrt(D)
-        if scale is not None:
-            scores_top = scores_top * scale
-        
-        context = self._get_initial_context(values, L_Q)
-        context, attn = self._update_context(context, values, scores_top, index, L_Q, attn_mask)
-        
-        return context.transpose(2, 1).contiguous(), attn
-
-
-class AttentionLayer(nn.Module):
-    """Attention layer wrapper"""
-    
-    def __init__(self, attention, d_model, n_heads, d_keys=None, d_values=None):
-        super().__init__()
-        
-        d_keys = d_keys or (d_model // n_heads)
-        d_values = d_values or (d_model // n_heads)
-        
-        self.inner_attention = attention
-        self.query_projection = nn.Linear(d_model, d_keys * n_heads)
-        self.key_projection = nn.Linear(d_model, d_keys * n_heads)
-        self.value_projection = nn.Linear(d_model, d_values * n_heads)
-        self.out_projection = nn.Linear(d_values * n_heads, d_model)
-        self.n_heads = n_heads
-        
-    def forward(self, queries, keys, values, attn_mask=None):
-        B, L, _ = queries.shape
-        _, S, _ = keys.shape
-        H = self.n_heads
-        
-        queries = self.query_projection(queries).view(B, L, H, -1)
-        keys = self.key_projection(keys).view(B, S, H, -1)
-        values = self.value_projection(values).view(B, S, H, -1)
-        
-        out, attn = self.inner_attention(queries, keys, values, attn_mask)
-        out = out.view(B, L, -1)
-        
-        return self.out_projection(out), attn
-
-
-class ConvLayer(nn.Module):
-    """Conv layer for self-attention distilling"""
-    
-    def __init__(self, c_in):
-        super().__init__()
-        self.downConv = nn.Conv1d(in_channels=c_in,
-                                  out_channels=c_in,
-                                  kernel_size=3,
-                                  padding=2,
-                                  padding_mode='circular')
-        self.norm = nn.BatchNorm1d(c_in)
-        self.activation = nn.ELU()
-        self.maxPool = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
-        
-    def forward(self, x):
-        x = self.downConv(x.permute(0, 2, 1))
-        x = self.norm(x)
-        x = self.activation(x)
-        x = self.maxPool(x)
-        x = x.transpose(1, 2)
-        return x
-
-
-class EncoderLayer(nn.Module):
-    """Informer encoder layer with distilling"""
-    
-    def __init__(self, attention, d_model, d_ff=None, dropout=0.1, activation="relu"):
-        super().__init__()
-        d_ff = d_ff or 4 * d_model
-        self.attention = attention
-        self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
-        self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
-        self.dropout = nn.Dropout(dropout)
-        self.activation = F.relu if activation == "relu" else F.gelu
-        
-    def forward(self, x, attn_mask=None):
-        new_x, attn = self.attention(x, x, x, attn_mask=attn_mask)
-        x = x + self.dropout(new_x)
-        
-        y = x = self.norm1(x)
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
-        y = self.dropout(self.conv2(y).transpose(-1, 1))
-        
-        return self.norm2(x + y), attn
-
-
-class Encoder(nn.Module):
-    """Informer encoder with distilling"""
-    
-    def __init__(self, attn_layers, conv_layers=None, norm_layer=None):
-        super().__init__()
-        self.attn_layers = nn.ModuleList(attn_layers)
-        self.conv_layers = nn.ModuleList(conv_layers) if conv_layers is not None else None
-        self.norm = norm_layer
-        
-    def forward(self, x, attn_mask=None):
-        attns = []
-        if self.conv_layers is not None:
-            for attn_layer, conv_layer in zip(self.attn_layers, self.conv_layers):
-                x, attn = attn_layer(x, attn_mask=attn_mask)
-                x = conv_layer(x)
-                attns.append(attn)
-            x, attn = self.attn_layers[-1](x, attn_mask=attn_mask)
-            attns.append(attn)
-        else:
-            for attn_layer in self.attn_layers:
-                x, attn = attn_layer(x, attn_mask=attn_mask)
-                attns.append(attn)
-        
-        if self.norm is not None:
-            x = self.norm(x)
-        
-        return x, attns
-
-
-class DecoderLayer(nn.Module):
-    """Informer decoder layer"""
-    
-    def __init__(self, self_attention, cross_attention, d_model, d_ff=None,
-                 dropout=0.1, activation="relu"):
-        super().__init__()
-        d_ff = d_ff or 4 * d_model
-        self.self_attention = self_attention
-        self.cross_attention = cross_attention
-        self.conv1 = nn.Conv1d(in_channels=d_model, out_channels=d_ff, kernel_size=1)
-        self.conv2 = nn.Conv1d(in_channels=d_ff, out_channels=d_model, kernel_size=1)
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
-        self.norm3 = nn.LayerNorm(d_model)
-        self.dropout = nn.Dropout(dropout)
-        self.activation = F.relu if activation == "relu" else F.gelu
-        
-    def forward(self, x, cross, x_mask=None, cross_mask=None):
-        x = x + self.dropout(self.self_attention(x, x, x, attn_mask=x_mask)[0])
-        x = self.norm1(x)
-        
-        x = x + self.dropout(self.cross_attention(x, cross, cross, attn_mask=cross_mask)[0])
-        
-        y = x = self.norm2(x)
-        y = self.dropout(self.activation(self.conv1(y.transpose(-1, 1))))
-        y = self.dropout(self.conv2(y).transpose(-1, 1))
-        
-        return self.norm3(x + y)
-
-
-class Decoder(nn.Module):
-    """Informer decoder"""
-    
-    def __init__(self, layers, norm_layer=None):
-        super().__init__()
-        self.layers = nn.ModuleList(layers)
-        self.norm = norm_layer
-        
-    def forward(self, x, cross, x_mask=None, cross_mask=None):
-        for layer in self.layers:
-            x = layer(x, cross, x_mask=x_mask, cross_mask=cross_mask)
-        
-        if self.norm is not None:
-            x = self.norm(x)
-        
-        return x
-
-
-class DataEmbedding(nn.Module):
-    """Data embedding with positional encoding"""
-    
-    def __init__(self, c_in, d_model, dropout=0.1):
-        super().__init__()
-        self.value_embedding = nn.Linear(c_in, d_model)
-        self.position_embedding = PositionalEmbedding(d_model)
-        self.dropout = nn.Dropout(p=dropout)
-        
-    def forward(self, x):
-        x = self.value_embedding(x) + self.position_embedding(x)
-        return self.dropout(x)
-
-
-class PositionalEmbedding(nn.Module):
-    """Positional embedding"""
-    
-    def __init__(self, d_model, max_len=5000):
-        super().__init__()
-        pe = torch.zeros(max_len, d_model).float()
-        pe.require_grad = False
-        
-        position = torch.arange(0, max_len).float().unsqueeze(1)
-        div_term = (torch.arange(0, d_model, 2).float() * 
-                    -(math.log(10000.0) / d_model)).exp()
-        
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        
-        pe = pe.unsqueeze(0)
-        self.register_buffer('pe', pe)
-        
-    def forward(self, x):
-        return self.pe[:, :x.size(1)]
-
-
-class Informer(nn.Module):
-    """Informer: Efficient Long Sequence Forecasting"""
-    
-    def __init__(self, enc_in, dec_in, c_out, seq_len, label_len, pred_len,
-                 factor=5, d_model=512, n_heads=8, e_layers=3, d_layers=2,
-                 d_ff=512, dropout=0.0, activation='gelu',
-                 output_attention=False, distil=True):
-        super().__init__()
-        self.pred_len = pred_len
-        self.output_attention = output_attention
-        
-        # Encoding
-        self.enc_embedding = DataEmbedding(enc_in, d_model, dropout)
-        self.dec_embedding = DataEmbedding(dec_in, d_model, dropout)
-        
-        # Encoder
-        self.encoder = Encoder(
-            [
-                EncoderLayer(
-                    AttentionLayer(
-                        ProbAttention(False, factor, attention_dropout=dropout, 
-                                    output_attention=output_attention),
-                        d_model, n_heads),
-                    d_model,
-                    d_ff,
-                    dropout=dropout,
-                    activation=activation
-                ) for l in range(e_layers)
-            ],
-            [
-                ConvLayer(d_model) for l in range(e_layers - 1)
-            ] if distil else None,
-            norm_layer=nn.LayerNorm(d_model)
-        )
-        
-        # Decoder
-        self.decoder = Decoder(
-            [
-                DecoderLayer(
-                    AttentionLayer(
-                        ProbAttention(True, factor, attention_dropout=dropout, 
-                                    output_attention=False),
-                        d_model, n_heads),
-                    AttentionLayer(
-                        ProbAttention(False, factor, attention_dropout=dropout, 
-                                    output_attention=False),
-                        d_model, n_heads),
-                    d_model,
-                    d_ff,
-                    dropout=dropout,
-                    activation=activation,
-                )
-                for l in range(d_layers)
-            ],
-            norm_layer=nn.LayerNorm(d_model)
-        )
-        
-        self.projection = nn.Linear(d_model, c_out, bias=True)
-        
-    def forward(self, x_enc, x_dec):
-        enc_out = self.enc_embedding(x_enc)
-        enc_out, attns = self.encoder(enc_out)
-        
-        dec_out = self.dec_embedding(x_dec)
-        dec_out = self.decoder(dec_out, enc_out)
-        dec_out = self.projection(dec_out)
-        
-        if self.output_attention:
-            return dec_out[:, -self.pred_len:, :], attns
-        else:
-            return dec_out[:, -self.pred_len:, :]
-
-
-# ============================================================================
-# PYTORCH DATASET
-# ============================================================================
-
-class InformerDataset(Dataset):
-    """Dataset for Informer"""
-    
-    def __init__(self, data, seq_len, label_len, pred_len):
-        self.data = data
+    def __init__(self, features, prices, seq_len, label_len, pred_len):
+        self.features = features
+        self.prices = prices
         self.seq_len = seq_len
         self.label_len = label_len
         self.pred_len = pred_len
         
     def __len__(self):
-        return len(self.data) - self.seq_len - self.pred_len + 1
+        return len(self.features) - self.seq_len - self.pred_len + 1
     
     def __getitem__(self, idx):
-        s_begin = idx
-        s_end = s_begin + self.seq_len
-        r_begin = s_end - self.label_len
-        r_end = r_begin + self.label_len + self.pred_len
+        # Input encoder: feature sequence
+        x_enc = self.features[idx:idx + self.seq_len]
         
-        seq_x = self.data[s_begin:s_end]
-        seq_y = self.data[r_begin:r_end]
+        # Input decoder: starts with label_len from end of encoder, then zeros
+        x_dec_start = self.features[idx + self.seq_len - self.label_len:idx + self.seq_len]
+        x_dec_zeros = np.zeros((self.pred_len, self.features.shape[1]))
+        x_dec = np.vstack([x_dec_start, x_dec_zeros])
         
-        return torch.FloatTensor(seq_x), torch.FloatTensor(seq_y)
+        # Target: future returns (first feature column)
+        y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
+        
+        # Last price for reconstruction
+        last_price = self.prices[idx + self.seq_len - 1]
+        
+        return (torch.FloatTensor(x_enc), 
+                torch.FloatTensor(x_dec),
+                torch.FloatTensor(y),
+                torch.FloatTensor([last_price]))
 
 
 # ============================================================================
-# TRAINER
+# IMPROVED TRAINER (same as transformer improved)
 # ============================================================================
 
-class InformerTrainer:
-    """Training pipeline for Informer"""
+class ImprovedInformerTrainer:
+    """Enhanced training with Huber loss and better scheduling"""
     
-    def __init__(self, model, device, learning_rate=0.0001):
+    def __init__(self, model, device, learning_rate=0.001, warmup_epochs=5):
         self.model = model.to(device)
         self.device = device
-        self.criterion = nn.MSELoss()
-        self.optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.5, patience=5
+        self.criterion = nn.HuberLoss(delta=1.0)
+        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
+                                     weight_decay=1e-5)
+        
+        self.warmup_epochs = warmup_epochs
+        self.base_lr = learning_rate
+        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=50, eta_min=learning_rate/10
         )
         self.best_val_loss = float('inf')
+        self.epoch = 0
         
-    def train_epoch(self, train_loader, label_len, pred_len):
+    def _adjust_learning_rate(self):
+        """Warmup learning rate for first few epochs"""
+        if self.epoch < self.warmup_epochs:
+            lr = self.base_lr * (self.epoch + 1) / self.warmup_epochs
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = lr
+    
+    def train_epoch(self, train_loader):
         self.model.train()
         total_loss = 0
         
-        for seq_x, seq_y in train_loader:
-            seq_x, seq_y = seq_x.to(self.device), seq_y.to(self.device)
-            
-            dec_inp = torch.zeros_like(seq_y[:, -pred_len:, :]).float()
-            dec_inp = torch.cat([seq_y[:, :label_len, :], dec_inp], dim=1).to(self.device)
+        for x_enc, x_dec, target, _ in train_loader:
+            x_enc = x_enc.to(self.device)
+            x_dec = x_dec.to(self.device)
+            target = target.to(self.device)
             
             self.optimizer.zero_grad()
-            outputs = self.model(seq_x, dec_inp)
-            
-            loss = self.criterion(outputs, seq_y[:, -pred_len:, :])
+            output = self.model(x_enc, x_dec)
+            output = output.squeeze(-1)  # Remove last dimension: (batch, pred_len, 1) -> (batch, pred_len)
+            loss = self.criterion(output, target)
             loss.backward()
-            self.optimizer.step()
             
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            
+            self.optimizer.step()
             total_loss += loss.item()
             
         return total_loss / len(train_loader)
     
-    def validate(self, val_loader, label_len, pred_len):
+    def validate(self, val_loader):
         self.model.eval()
         total_loss = 0
         
         with torch.no_grad():
-            for seq_x, seq_y in val_loader:
-                seq_x, seq_y = seq_x.to(self.device), seq_y.to(self.device)
-                
-                dec_inp = torch.zeros_like(seq_y[:, -pred_len:, :]).float()
-                dec_inp = torch.cat([seq_y[:, :label_len, :], dec_inp], dim=1).to(self.device)
-                
-                outputs = self.model(seq_x, dec_inp)
-                loss = self.criterion(outputs, seq_y[:, -pred_len:, :])
+            for x_enc, x_dec, target, _ in val_loader:
+                x_enc = x_enc.to(self.device)
+                x_dec = x_dec.to(self.device)
+                target = target.to(self.device)
+                output = self.model(x_enc, x_dec)
+                output = output.squeeze(-1)  # Remove last dimension: (batch, pred_len, 1) -> (batch, pred_len)
+                loss = self.criterion(output, target)
                 total_loss += loss.item()
                 
         return total_loss / len(val_loader)
     
-    def fit(self, train_loader, val_loader, epochs, label_len, pred_len, patience=10):
-        """Train the model"""
+    def fit(self, train_loader, val_loader, epochs, patience=15):
+        """Train with warmup and cosine annealing"""
         print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                          STEP 2: MODEL TRAINING                               ║")
+        print("║                          TRAINING (IMPROVED INFORMER)                         ║")
         print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
         
-        train_losses = []
-        val_losses = []
-        patience_counter = 0
-        
-        print(f"🚀 Training started")
+        print(f"🚀 Training Informer with Huber loss and learning rate scheduling")
         print(f"   Device: {self.device}")
-        print(f"   Epochs: {epochs}\n")
+        print(f"   Warmup epochs: {self.warmup_epochs}")
+        print(f"   Total epochs: {epochs}\n")
         print("─" * 80)
         
+        train_losses, val_losses = [], []
+        patience_counter = 0
+        
         for epoch in range(epochs):
-            train_loss = self.train_epoch(train_loader, label_len, pred_len)
-            val_loss = self.validate(val_loader, label_len, pred_len)
+            self.epoch = epoch
+            self._adjust_learning_rate()
+            
+            train_loss = self.train_epoch(train_loader)
+            val_loss = self.validate(val_loader)
             
             train_losses.append(train_loss)
             val_losses.append(val_loss)
             
-            self.scheduler.step(val_loss)
+            if epoch >= self.warmup_epochs:
+                self.scheduler.step()
+            
+            current_lr = self.optimizer.param_groups[0]['lr']
             
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
@@ -856,129 +258,165 @@ class InformerTrainer:
             
             if (epoch + 1) % 5 == 0 or epoch == 0:
                 print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
-                      f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} {status}")
+                      f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} │ "
+                      f"LR: {current_lr:.2e} │ {status}")
             
             if patience_counter >= patience:
                 print(f"\n⚠️  Early stopping at epoch {epoch+1}")
                 break
         
         print("─" * 80)
-        print(f"✅ Training completed! Best val loss: {self.best_val_loss:.6f}\n")
+        print(f"✅ Best validation loss: {self.best_val_loss:.6f}\n")
         
         return train_losses, val_losses
 
 
 # ============================================================================
-# EVALUATION
+# IMPROVED EVALUATION (same as transformer improved)
 # ============================================================================
 
-class InformerEvaluator:
-    """Model evaluation"""
+class ImprovedInformerEvaluator:
+    """Evaluation with price reconstruction from returns"""
     
     @staticmethod
-    def evaluate(model, test_loader, device, scaler, config):
-        """Evaluate model"""
+    def evaluate(model, test_loader, device, scaler):
+        """Evaluate and reconstruct prices from returns"""
         print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                         STEP 3: MODEL EVALUATION                              ║")
+        print("║                         EVALUATION (IMPROVED INFORMER)                        ║")
         print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
         
         model.eval()
-        predictions = []
-        actuals = []
-        
-        print("📊 Generating predictions...")
+        pred_returns, actual_returns, last_prices = [], [], []
         
         with torch.no_grad():
-            for seq_x, seq_y in test_loader:
-                seq_x, seq_y = seq_x.to(device), seq_y.to(device)
+            for x_enc, x_dec, target, last_price in test_loader:
+                x_enc = x_enc.to(device)
+                x_dec = x_dec.to(device)
+                output = model(x_enc, x_dec)
+                output = output.squeeze(-1)  # Remove last dimension: (batch, pred_len, 1) -> (batch, pred_len)
                 
-                dec_inp = torch.zeros_like(seq_y[:, -config['pred_len']:, :]).float()
-                dec_inp = torch.cat([seq_y[:, :config['label_len'], :], dec_inp], dim=1).to(device)
-                
-                output = model(seq_x, dec_inp)
-                predictions.append(output.cpu().numpy())
-                actuals.append(seq_y[:, -config['pred_len']:, :].cpu().numpy())
+                pred_returns.append(output.cpu().numpy())
+                actual_returns.append(target.numpy())
+                last_prices.append(last_price.numpy())
         
-        predictions = np.concatenate(predictions, axis=0)
-        actuals = np.concatenate(actuals, axis=0)
+        pred_returns = np.concatenate(pred_returns, axis=0)
+        actual_returns = np.concatenate(actual_returns, axis=0)
+        last_prices = np.concatenate(last_prices, axis=0)
         
-        # Inverse transform
-        pred_rescaled = scaler.inverse_transform(predictions.reshape(-1, 1)).reshape(predictions.shape)
-        actual_rescaled = scaler.inverse_transform(actuals.reshape(-1, 1)).reshape(actuals.shape)
+        # Denormalize returns
+        pred_returns_denorm = scaler.inverse_transform(pred_returns)
+        actual_returns_denorm = scaler.inverse_transform(actual_returns)
         
-        print("   ✅ Predictions generated\n")
+        # Reconstruct prices from returns
+        pred_prices = ImprovedInformerEvaluator._reconstruct_prices(
+            pred_returns_denorm, last_prices
+        )
+        actual_prices = ImprovedInformerEvaluator._reconstruct_prices(
+            actual_returns_denorm, last_prices
+        )
         
         # Calculate metrics
-        metrics = InformerEvaluator._calculate_metrics(pred_rescaled, actual_rescaled, config['pred_len'])
-        InformerEvaluator._print_metrics(metrics)
+        metrics = ImprovedInformerEvaluator._calculate_metrics(pred_prices, actual_prices)
+        ImprovedInformerEvaluator._print_metrics(metrics)
         
-        return pred_rescaled, actual_rescaled, metrics
+        return pred_prices, actual_prices, metrics
     
     @staticmethod
-    def _calculate_metrics(predictions, actuals, pred_len):
-        """Calculate metrics"""
+    def _reconstruct_prices(returns, last_prices):
+        """Reconstruct prices from log returns"""
+        prices = np.zeros_like(returns)
+        
+        for i in range(len(returns)):
+            current_price = last_prices[i, 0]
+            for j in range(returns.shape[1]):
+                current_price = current_price * np.exp(returns[i, j])
+                prices[i, j] = current_price
+        
+        return prices
+    
+    @staticmethod
+    def _calculate_metrics(predictions, actuals):
+        """Calculate metrics per forecast day"""
         metrics = {}
+        pred_len = predictions.shape[1]
         
         for i in range(pred_len):
-            pred = predictions[:, i, 0]
-            actual = actuals[:, i, 0]
+            pred = predictions[:, i]
+            actual = actuals[:, i]
             
             rmse = np.sqrt(mean_squared_error(actual, pred))
             mae = mean_absolute_error(actual, pred)
             r2 = r2_score(actual, pred)
             mape = np.mean(np.abs((actual - pred) / actual)) * 100
             
+            # Directional accuracy
+            actual_dir = np.sign(np.diff(np.concatenate([[actual[0]], actual])))
+            pred_dir = np.sign(np.diff(np.concatenate([[pred[0]], pred])))
+            dir_acc = np.mean(actual_dir == pred_dir) * 100
+            
             metrics[f'Day_{i+1}'] = {
                 'RMSE': rmse,
                 'MAE': mae,
                 'R2': r2,
-                'MAPE': mape
+                'MAPE': mape,
+                'Dir_Acc': dir_acc
             }
         
         return metrics
     
     @staticmethod
     def _print_metrics(metrics):
-        """Print metrics"""
-        print("📈 EVALUATION METRICS")
-        print("─" * 80)
-        print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} {'MAPE':>10}")
-        print("─" * 80)
+        """Print evaluation metrics"""
+        print("📈 EVALUATION METRICS (Price Reconstruction)")
+        print("─" * 90)
+        print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} "
+              f"{'MAPE':>10} {'Dir%':>10}")
+        print("─" * 90)
         
         for day, m in metrics.items():
-            print(f"{day:<12} ${m['RMSE']:>9,.2f} ${m['MAE']:>9,.2f} "
-                  f"{m['R2']:>9.4f} {m['MAPE']:>9.2f}%")
+            print(f"{day:<12} "
+                  f"${m['RMSE']:>9,.2f} "
+                  f"${m['MAE']:>9,.2f} "
+                  f"{m['R2']:>9.4f} "
+                  f"{m['MAPE']:>9.2f}% "
+                  f"{m['Dir_Acc']:>9.1f}%")
         
-        print("─" * 80)
+        print("─" * 90)
         
+        # Averages
         avg_rmse = np.mean([m['RMSE'] for m in metrics.values()])
         avg_mae = np.mean([m['MAE'] for m in metrics.values()])
         avg_r2 = np.mean([m['R2'] for m in metrics.values()])
         avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
+        avg_dir = np.mean([m['Dir_Acc'] for m in metrics.values()])
         
-        print(f"{'AVERAGE':<12} ${avg_rmse:>9,.2f} ${avg_mae:>9,.2f} "
-              f"{avg_r2:>9.4f} {avg_mape:>9.2f}%")
-        print("─" * 80 + "\n")
+        print(f"{'AVERAGE':<12} "
+              f"${avg_rmse:>9,.2f} "
+              f"${avg_mae:>9,.2f} "
+              f"{avg_r2:>9.4f} "
+              f"{avg_mape:>9.2f}% "
+              f"{avg_dir:>9.1f}%")
+        print("─" * 90 + "\n")
     
     @staticmethod
     def plot_predictions(predictions, actuals, save_path='informer/informer/03_predictions.png'):
-        """Plot predictions"""
-        pred_len = predictions.shape[1]
-        n_plots = min(pred_len, 4)
+        """Plot price predictions"""
+        pred_len = min(predictions.shape[1], 4)
         
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         axes = axes.flatten()
         
-        for i in range(n_plots):
+        for i in range(pred_len):
             ax = axes[i]
             
             x = np.arange(len(predictions))
-            ax.plot(x, actuals[:, i, 0], label='Actual', linewidth=2, alpha=0.8, color='#2E86AB')
-            ax.plot(x, predictions[:, i, 0], label='Predicted', linewidth=2, alpha=0.8, 
-                   color='#F18F01', linestyle='--')
+            ax.plot(x, actuals[:, i], label='Actual', linewidth=2, 
+                   alpha=0.8, color='#2E86AB')
+            ax.plot(x, predictions[:, i], label='Predicted', linewidth=2, 
+                   alpha=0.8, color='#F18F01', linestyle='--')
             
-            r2 = r2_score(actuals[:, i, 0], predictions[:, i, 0])
-            mae = mean_absolute_error(actuals[:, i, 0], predictions[:, i, 0])
+            r2 = r2_score(actuals[:, i], predictions[:, i])
+            mae = mean_absolute_error(actuals[:, i], predictions[:, i])
             
             ax.set_title(f'Day {i+1} Forecast (R²={r2:.3f}, MAE=${mae:,.0f})', 
                         fontsize=13, fontweight='bold')
@@ -986,6 +424,101 @@ class InformerEvaluator:
             ax.set_ylabel('Bitcoin Price (USD)', fontsize=11)
             ax.legend(fontsize=10)
             ax.grid(True, alpha=0.3)
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(
+                lambda x, p: f'${x:,.0f}'))
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {save_path}\n")
+        plt.close()
+    
+    @staticmethod
+    def plot_error_analysis(predictions, actuals, save_path='informer/informer/04_error_analysis.png'):
+        """Analyze prediction errors"""
+        fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+        
+        pred = predictions[:, 0]
+        actual = actuals[:, 0]
+        errors = pred - actual
+        pct_errors = (errors / actual) * 100
+        
+        # 1. Scatter plot
+        axes[0, 0].scatter(actual, pred, alpha=0.5, s=30)
+        min_val, max_val = min(actual.min(), pred.min()), max(actual.max(), pred.max())
+        axes[0, 0].plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2)
+        axes[0, 0].set_xlabel('Actual Price (USD)', fontsize=11)
+        axes[0, 0].set_ylabel('Predicted Price (USD)', fontsize=11)
+        axes[0, 0].set_title('Predicted vs Actual (Day 1)', fontsize=13, fontweight='bold')
+        axes[0, 0].grid(True, alpha=0.3)
+        axes[0, 0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        axes[0, 0].xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        
+        # 2. Error distribution
+        axes[0, 1].hist(errors, bins=50, color='#C73E1D', alpha=0.7, edgecolor='black')
+        axes[0, 1].axvline(0, color='black', linestyle='--', linewidth=2)
+        axes[0, 1].axvline(errors.mean(), color='red', linestyle='--', linewidth=2, 
+                          label=f'Mean: ${errors.mean():,.0f}')
+        axes[0, 1].set_xlabel('Prediction Error (USD)', fontsize=11)
+        axes[0, 1].set_ylabel('Frequency', fontsize=11)
+        axes[0, 1].set_title('Error Distribution', fontsize=13, fontweight='bold')
+        axes[0, 1].legend()
+        axes[0, 1].grid(True, alpha=0.3, axis='y')
+        
+        # 3. Errors over time
+        x = np.arange(len(errors))
+        axes[1, 0].plot(x, errors, linewidth=1, alpha=0.7, color='#C73E1D')
+        axes[1, 0].axhline(0, color='black', linestyle='--', linewidth=1)
+        axes[1, 0].fill_between(x, 0, errors, alpha=0.3, color='#C73E1D')
+        axes[1, 0].set_xlabel('Sample', fontsize=11)
+        axes[1, 0].set_ylabel('Prediction Error (USD)', fontsize=11)
+        axes[1, 0].set_title('Errors Over Time', fontsize=13, fontweight='bold')
+        axes[1, 0].grid(True, alpha=0.3)
+        
+        # 4. Percentage error distribution
+        axes[1, 1].hist(pct_errors, bins=50, color='#A23B72', alpha=0.7, edgecolor='black')
+        axes[1, 1].axvline(0, color='black', linestyle='--', linewidth=2)
+        axes[1, 1].axvline(pct_errors.mean(), color='red', linestyle='--', linewidth=2,
+                          label=f'Mean: {pct_errors.mean():.2f}%')
+        axes[1, 1].set_xlabel('Percentage Error (%)', fontsize=11)
+        axes[1, 1].set_ylabel('Frequency', fontsize=11)
+        axes[1, 1].set_title('Percentage Error Distribution', fontsize=13, fontweight='bold')
+        axes[1, 1].legend()
+        axes[1, 1].grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {save_path}\n")
+        plt.close()
+    
+    @staticmethod
+    def plot_training_history(train_losses, val_losses, save_path='informer/informer/05_training_history.png'):
+        """Plot training history"""
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+        
+        epochs = range(1, len(train_losses) + 1)
+        
+        # Loss curves
+        ax1.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
+                markersize=4, alpha=0.7)
+        ax1.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
+                markersize=4, alpha=0.7)
+        ax1.set_xlabel('Epoch', fontsize=12)
+        ax1.set_ylabel('Loss (Huber)', fontsize=12)
+        ax1.set_title('Training History - Informer', fontsize=14, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        
+        # Log scale
+        ax2.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
+                markersize=4, alpha=0.7)
+        ax2.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
+                markersize=4, alpha=0.7)
+        ax2.set_xlabel('Epoch', fontsize=12)
+        ax2.set_ylabel('Loss (Huber, log scale)', fontsize=12)
+        ax2.set_title('Training History (Log Scale) - Informer', fontsize=14, fontweight='bold')
+        ax2.set_yscale('log')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
@@ -998,28 +531,29 @@ class InformerEvaluator:
 # ============================================================================
 
 def main():
-    """Main execution"""
+    """Main execution with improvements"""
     
     CONFIG = {
         'use_real_data': True,
         'start_date': '2020-01-01',
         'end_date': None,
         
-        'seq_len': 60,
-        'label_len': 48,
-        'pred_len': 7,
-        'd_model': 512,
+        'seq_len': 10,          # Shorter sequence
+        'label_len': 5,         # Informer-specific
+        'pred_len': 7,          # Predict 7 days ahead
+        'd_model': 128,         # Slightly reduced
         'n_heads': 8,
-        'e_layers': 2,
-        'd_layers': 1,
-        'd_ff': 2048,
-        'factor': 5,
-        'dropout': 0.05,
+        'e_layers': 2,          # Encoder layers
+        'd_layers': 1,          # Decoder layers
+        'd_ff': 512,
+        'factor': 5,            # ProbSparse factor
+        'dropout': 0.1,
         
         'batch_size': 32,
-        'epochs': 50,
-        'learning_rate': 0.0001,
-        'patience': 10,
+        'epochs': 100,
+        'learning_rate': 0.0005,
+        'warmup_epochs': 5,
+        'patience': 15,
         
         'train_ratio': 0.7,
         'val_ratio': 0.15,
@@ -1035,39 +569,61 @@ def main():
         end_date=CONFIG['end_date']
     )
     
-    # EDA
-    eda = BitcoinEDA(df, is_real_data=is_real)
-    eda.run_full_eda()
+    print(f"✅ Loaded {len(df)} days of {'real' if is_real else 'synthetic'} data\n")
     
-    # Prepare data
-    data = df[['Close']].values
-    scaler = StandardScaler()
-    scaled_data = scaler.fit_transform(data)
+    # Feature engineering
+    features_df, prices = ImprovedFeatureEngineer.create_features(df)
     
-    # Split
-    n = len(scaled_data)
+    # Normalize features
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    scaled_features = scaler.fit_transform(features_df.values)
+    prices_array = prices.values
+    
+    # Create separate scaler for returns only
+    returns_scaler = MinMaxScaler(feature_range=(-1, 1))
+    returns_scaler.fit(features_df[['Returns']].values)
+    
+    # Split data
+    n = len(scaled_features)
     train_size = int(n * CONFIG['train_ratio'])
     val_size = int(n * CONFIG['val_ratio'])
     
-    train_data = scaled_data[:train_size]
-    val_data = scaled_data[train_size:train_size + val_size]
-    test_data = scaled_data[train_size + val_size:]
+    train_features = scaled_features[:train_size]
+    train_prices = prices_array[:train_size]
     
-    # Datasets
-    train_dataset = InformerDataset(train_data, CONFIG['seq_len'], 
-                                   CONFIG['label_len'], CONFIG['pred_len'])
-    val_dataset = InformerDataset(val_data, CONFIG['seq_len'],
-                                 CONFIG['label_len'], CONFIG['pred_len'])
-    test_dataset = InformerDataset(test_data, CONFIG['seq_len'],
-                                  CONFIG['label_len'], CONFIG['pred_len'])
+    val_features = scaled_features[train_size:train_size + val_size]
+    val_prices = prices_array[train_size:train_size + val_size]
+    
+    test_features = scaled_features[train_size + val_size:]
+    test_prices = prices_array[train_size + val_size:]
+    
+    print(f"📊 Data split:")
+    print(f"   Training:   {len(train_features)} samples")
+    print(f"   Validation: {len(val_features)} samples")
+    print(f"   Test:       {len(test_features)} samples\n")
+    
+    # Create datasets
+    train_dataset = InformerReturnsDataset(
+        train_features, train_prices,
+        CONFIG['seq_len'], CONFIG['label_len'], CONFIG['pred_len']
+    )
+    val_dataset = InformerReturnsDataset(
+        val_features, val_prices,
+        CONFIG['seq_len'], CONFIG['label_len'], CONFIG['pred_len']
+    )
+    test_dataset = InformerReturnsDataset(
+        test_features, test_prices,
+        CONFIG['seq_len'], CONFIG['label_len'], CONFIG['pred_len']
+    )
     
     train_loader = DataLoader(train_dataset, batch_size=CONFIG['batch_size'], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=CONFIG['batch_size'], shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=CONFIG['batch_size'], shuffle=False)
     
-    # Model
+    # Build model
+    n_features = scaled_features.shape[1]
     model = Informer(
-        enc_in=1, dec_in=1, c_out=1,
+        enc_in=n_features, dec_in=n_features, c_out=1,  # Output 1 feature (returns)
         seq_len=CONFIG['seq_len'],
         label_len=CONFIG['label_len'],
         pred_len=CONFIG['pred_len'],
@@ -1080,25 +636,68 @@ def main():
         dropout=CONFIG['dropout']
     )
     
-    print(f"🧠 Informer: {sum(p.numel() for p in model.parameters()):,} parameters\n")
+    print(f"🧠 Informer Architecture:")
+    print(f"   Input features:      {n_features}")
+    print(f"   Sequence length:     {CONFIG['seq_len']} days")
+    print(f"   Label length:        {CONFIG['label_len']} days")
+    print(f"   Prediction horizon:  {CONFIG['pred_len']} days")
+    print(f"   Model dimension:     {CONFIG['d_model']}")
+    print(f"   Encoder layers:      {CONFIG['e_layers']}")
+    print(f"   Decoder layers:      {CONFIG['d_layers']}")
+    print(f"   Total parameters:    {sum(p.numel() for p in model.parameters()):,}\n")
     
     # Train
-    trainer = InformerTrainer(model, device, CONFIG['learning_rate'])
+    trainer = ImprovedInformerTrainer(
+        model, device,
+        learning_rate=CONFIG['learning_rate'],
+        warmup_epochs=CONFIG['warmup_epochs']
+    )
+    
     train_losses, val_losses = trainer.fit(
-        train_loader, val_loader, CONFIG['epochs'],
-        CONFIG['label_len'], CONFIG['pred_len'], CONFIG['patience']
+        train_loader, val_loader,
+        epochs=CONFIG['epochs'],
+        patience=CONFIG['patience']
     )
     
     # Evaluate
+    os.makedirs('informer', exist_ok=True)
     model.load_state_dict(torch.load('informer/best_informer_model.pth'))
-    predictions, actuals, metrics = InformerEvaluator.evaluate(
-        model, test_loader, device, scaler, CONFIG
+    predictions, actuals, metrics = ImprovedInformerEvaluator.evaluate(
+        model, test_loader, device, returns_scaler
     )
     
-    # Plot
-    InformerEvaluator.plot_predictions(predictions, actuals)
+    # Plot predictions
+    ImprovedInformerEvaluator.plot_predictions(predictions, actuals)
     
-    print("\n✅ Informer training and evaluation complete!\n")
+    # Plot error analysis
+    ImprovedInformerEvaluator.plot_error_analysis(predictions, actuals)
+    
+    # Plot training history
+    ImprovedInformerEvaluator.plot_training_history(train_losses, val_losses)
+    
+    print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+    print("║                        IMPROVEMENTS SUMMARY                                   ║")
+    print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+    
+    print("✅ Applied improvements (same as Transformer):")
+    print("   1. ✅ Train on log-returns instead of prices")
+    print("   2. ✅ Use MinMaxScaler for better normalization")
+    print("   3. ✅ Huber loss for robustness to outliers")
+    print("   4. ✅ Learning rate warmup + cosine annealing")
+    print("   5. ✅ Reduced sequence length (10 days)")
+    print("   6. ✅ Reduced model layers (2 encoder, 1 decoder)")
+    print("   7. ✅ Enhanced feature engineering")
+    print("   8. ✅ Gradient clipping for stability")
+    print("   9. ✅ ProbSparse attention for efficiency")
+    print()
+    
+    avg_r2 = np.mean([m['R2'] for m in metrics.values()])
+    avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
+    
+    print(f"📊 Final Results:")
+    print(f"   Average R²:   {avg_r2:.4f}")
+    print(f"   Average MAPE: {avg_mape:.2f}%")
+    print()
 
 
 if __name__ == "__main__":
