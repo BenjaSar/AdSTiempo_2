@@ -28,7 +28,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Import from original transformer
-from bitcoin_transformer import (
+from transformer.bitcoin_transformer import (
     BitcoinDataLoader, 
     TimeSeriesTransformer,
     PositionalEncoding
