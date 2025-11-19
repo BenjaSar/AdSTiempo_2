@@ -27,14 +27,15 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import from original informer
 import sys
 #sys.path.append('..')
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from transformer.bitcoin_transformer import BitcoinDataLoader
+
+# Import dataloader from original informer
+from src.models.transformer_model import BitcoinDataLoader
 
 # Import Informer architecture from bitcoin_informer
-from informer.bitcoin_informer import Informer
+from src.models.informer_model import Informer
 
 plt.style.use('seaborn-v0_8-darkgrid')
 torch.manual_seed(42)
@@ -43,7 +44,8 @@ np.random.seed(42)
 print("""
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║        IMPROVED INFORMER - RETURNS-BASED FORECASTING                          ║
+║   INFORMER: EFFICIENT LONG-SEQUENCE FORECASTING - RETURNS-BASED FORECASTING   ║
+║                     Production Implementation v2.0                            ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """)
@@ -399,7 +401,7 @@ class ImprovedInformerEvaluator:
         print("─" * 90 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, save_path='informer/informer/03_predictions.png'):
+    def plot_predictions(predictions, actuals, save_path='informer/results/03_predictions.png'):
         """Plot price predictions"""
         pred_len = min(predictions.shape[1], 4)
         
@@ -433,7 +435,7 @@ class ImprovedInformerEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_error_analysis(predictions, actuals, save_path='informer/informer/04_error_analysis.png'):
+    def plot_error_analysis(predictions, actuals, save_path='informer/results/04_error_analysis.png'):
         """Analyze prediction errors"""
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
@@ -491,7 +493,7 @@ class ImprovedInformerEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_training_history(train_losses, val_losses, save_path='informer/informer/05_training_history.png'):
+    def plot_training_history(train_losses, val_losses, save_path='informer/results/05_training_history.png'):
         """Plot training history"""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
         
@@ -534,27 +536,31 @@ def main():
     """Main execution with improvements"""
     
     CONFIG = {
+        # Data parameters
         'use_real_data': True,
         'start_date': '2020-01-01',
-        'end_date': None,
+        'end_date': None,  # None = today
         
-        'seq_len': 10,          # Shorter sequence
-        'label_len': 5,         # Informer-specific
-        'pred_len': 7,          # Predict 7 days ahead
-        'd_model': 128,         # Slightly reduced
-        'n_heads': 8,
+        # Model parameters
+        'seq_len': 10,          # Lookback window -> Shorter for returns
+        'label_len': 5,         # Label length (Informer-specific) -> Reduced
+        'pred_len': 7,          # Forecast horizon (Predict 7 days ahead) 
+        'd_model': 128,         # Model dimension -> Slightly reduced
+        'n_heads': 8,           # Number of attention heads
         'e_layers': 2,          # Encoder layers
         'd_layers': 1,          # Decoder layers
-        'd_ff': 512,
+        'd_ff': 512,            # Feedforward dimension -> Reduced for efficiency
         'factor': 5,            # ProbSparse factor
-        'dropout': 0.1,
-        
+        'dropout': 0.1,         # Dropout rate
+
+        # Training parameters
         'batch_size': 32,
-        'epochs': 100,
-        'learning_rate': 0.0005,
+        'epochs': 2, #100
+        'learning_rate': 0.0005, # -> Slightly lower
         'warmup_epochs': 5,
         'patience': 15,
         
+        # Data split
         'train_ratio': 0.7,
         'val_ratio': 0.15,
     }

@@ -24,14 +24,20 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import os
 import warnings
 warnings.filterwarnings('ignore')
 
+import sys
+#sys.path.append('..')
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 # Import from original transformer
-from transformer.bitcoin_transformer import (
+from src.models.transformer_model import (
     BitcoinDataLoader, 
     TimeSeriesTransformer,
-    PositionalEncoding
+    BitcoinEDA
+    # PositionalEncoding
 )
 
 plt.style.use('seaborn-v0_8-darkgrid')
@@ -41,7 +47,8 @@ np.random.seed(42)
 print("""
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║        IMPROVED BITCOIN TRANSFORMER - RETURNS-BASED FORECASTING              ║
+║       BITCOIN TIME SERIES WITH TRANSFORMERS - RETURNS-BASED FORECASTING       ║
+║                     Production Implementation v2.0                            ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """)
@@ -520,32 +527,39 @@ def main():
     """Main execution with improvements"""
     
     CONFIG = {
+        # Data parameters
         'use_real_data': True,
         'start_date': '2020-01-01',
-        'end_date': None,
+        'end_date': None,  # None = today
         
-        'seq_len': 10,          # Shorter sequence (7-10 days as suggested)
-        'pred_len': 45,          # Predict 7 days ahead
-        'd_model': 128,         # Slightly reduced
-        'nhead': 8,
-        'num_layers': 2,        # Reduced from 3 to 2
-        'dim_feedforward': 512,
-        'dropout': 0.1,
+        # Model parameters
+        'seq_len': 10,          # Lookback window -> Shorter sequence (7-10 days as suggested)
+        'pred_len': 45,         # Forecast horizon (Predict 7 days ahead) 
+        'd_model': 128,         # Model dimension
+        'nhead': 8,             # Number of attention heads
+        'num_layers': 2,        # Number of transformer layers -> Reduced from 3 to 2
+        'dim_feedforward': 512, # Feedforward dimension
+        'dropout': 0.1,         # Dropout rate
         
+        # Training parameters
         'batch_size': 32,
         'epochs': 100,
-        'learning_rate': 0.0005,  # Slightly lower
+        'learning_rate': 0.0005,  # -> Slightly lower
         'warmup_epochs': 5,
         'patience': 15,
         
+        # Data split
         'train_ratio': 0.7,
         'val_ratio': 0.15,
+
+        # Future forecast
+        # 'forecast_days': 30
     }
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"⚙️  Device: {device}\n")
     
-    # Load data
+    # ETL
     df, is_real = BitcoinDataLoader.load_data(
         use_real_data=CONFIG['use_real_data'],
         start_date=CONFIG['start_date'],
@@ -554,6 +568,10 @@ def main():
     
     print(f"✅ Loaded {len(df)} days of {'real' if is_real else 'synthetic'} data\n")
     
+    # EDA
+    eda = BitcoinEDA(df, is_real_data=is_real)
+    eda.run_full_eda()
+
     # Feature engineering
     features_df, prices = ImprovedFeatureEngineer.create_features(df)
     
@@ -563,7 +581,7 @@ def main():
     prices_array = prices.values
     
     # Create separate scaler for returns only (first column)
-    returns_scaler = MinMaxScaler(feature_range=(-1, 1))
+    returns_scaler = MinMaxScaler(feature_range=(-1, 1)) # previously StandardScaler
     returns_scaler.fit(features_df[['Returns']].values)
     
     # Split data
