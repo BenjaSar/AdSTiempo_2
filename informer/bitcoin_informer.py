@@ -28,13 +28,12 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import sys
-#sys.path.append('..')
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import dataloader from original informer
-from src.models.transformer_model import BitcoinDataLoader
+# Import from ETL module
+from utils.etl import BitcoinDataLoader
 
-# Import Informer architecture from bitcoin_informer
+# Import Informer architecture
 from src.models.informer_model import Informer
 
 plt.style.use('seaborn-v0_8-darkgrid')

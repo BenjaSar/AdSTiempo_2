@@ -29,15 +29,17 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import sys
-#sys.path.append('..')
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import from original transformer
+# Import from ETL module
+from utils.etl import BitcoinDataLoader, BitcoinEDA
+
+# Import Transformer architecture
 from src.models.transformer_model import (
-    BitcoinDataLoader, 
-    TimeSeriesTransformer,
-    BitcoinEDA
-    # PositionalEncoding
+    TimeSeriesTransformer, 
+    TimeSeriesDataset, 
+    FeatureImportance, 
+    RiskAnalyzer
 )
 
 plt.style.use('seaborn-v0_8-darkgrid')
@@ -543,7 +545,7 @@ def main():
         
         # Training parameters
         'batch_size': 32,
-        'epochs': 100,
+        'epochs': 2, #100
         'learning_rate': 0.0005,  # -> Slightly lower
         'warmup_epochs': 5,
         'patience': 15,
@@ -686,16 +688,73 @@ def main():
     print(f"   Average MAPE: {avg_mape:.2f}%")
     print()
 
+    # return {
+    #     'model': model,
+    #     'scaler': scaler,
+    #     'predictions': predictions,
+    #     'actuals': actuals,
+    #     'metrics': metrics,
+    #     'forecasts': forecasts,
+    #     'config': CONFIG,
+    #     'feature_cols': feature_cols,
+    #     'test_data': test_data
+    # }
+
+
 
 if __name__ == "__main__":
     import matplotlib
     matplotlib.use('Agg')
     
     try:
-        main()
+        results = main()
+        
+        # # Optional: Feature importance analysis
+        # print("\n" + "=" * 80)
+        # response = input("Would you like to perform feature importance analysis? (y/n): ")
+        # if response.lower() == 'y':
+        #     # Use a subset of test data for feature importance
+        #     test_subset = results['test_data'][:min(200, len(results['test_data']))]
+        #     test_subset_dataset = TimeSeriesDataset(
+        #         test_subset,
+        #         results['config']['seq_len'],
+        #         results['config']['pred_len']
+        #     )
+        #     test_subset_loader = DataLoader(
+        #         test_subset_dataset,
+        #         batch_size=32,
+        #         shuffle=False
+        #     )
+            
+        #     importance_scores = FeatureImportance.calculate_importance(
+        #         results['model'],
+        #         test_subset_loader,
+        #         torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+        #         results['feature_cols'],
+        #         n_repeats=5,
+        #         max_batches=10
+        #     )
+        
+        # # Optional: Risk analysis
+        # print("\n" + "=" * 80)
+        # response = input("Would you like to perform risk analysis? (y/n): ")
+        # if response.lower() == 'y':
+        #     # Get historical returns
+        #     historical_returns = np.diff(results['actuals'][:, 0]) / results['actuals'][:-1, 0]
+            
+        #     risk_metrics = RiskAnalyzer.analyze_risk(
+        #         results['forecasts'],
+        #         results['actuals'][-1, 0],  # Last actual price
+        #         historical_returns
+        #     )
+        
+        # print("\n" + "╔" + "═" * 78 + "╗")
+        # print("║" + " " * 20 + "ALL ANALYSES COMPLETED SUCCESSFULLY!" + " " * 22 + "║")
+        # print("╚" + "═" * 78 + "╝\n")
+        
     except KeyboardInterrupt:
-        print("\n\n⚠️  Interrupted")
+        print("\n\n⚠️  Execution interrupted by user")
     except Exception as e:
-        print(f"\n\n❌ Error: {str(e)}")
+        print(f"\n\n❌ Error occurred: {str(e)}")
         import traceback
         traceback.print_exc()
