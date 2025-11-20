@@ -77,7 +77,7 @@ class BitcoinDataLoader:
         
         try:
             print(f"📥 Downloading Bitcoin data from {start_date} to {end_date or 'today'}...")
-            btc = yf.download('BTC-USD', start=start_date, end=end_date, progress=False)
+            btc = yf.download('BTC-USD', start=start_date, end=end_date, progress=True)
             
             if len(btc) == 0:
                 print("⚠️  No data returned from Yahoo Finance")

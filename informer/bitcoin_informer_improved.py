@@ -30,7 +30,13 @@ warnings.filterwarnings('ignore')
 # Import from original informer
 import sys
 sys.path.append('..')
-from bitcoin_transformer import BitcoinDataLoader
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from utils.loggin import get_logger
+
+
+# In any other file in the informer directory:
+
+from bitcoin_informer import BitcoinDataLoader
 
 # Import Informer architecture from bitcoin_informer
 from bitcoin_informer import Informer
@@ -58,6 +64,8 @@ class ImprovedFeatureEngineer:
     @staticmethod
     def create_features(df):
         """Create features based on returns"""
+        feature_logger = get_logger(__name__)
+
         print("🔧 Creating return-based features...")
         
         df = df.copy()
@@ -106,6 +114,9 @@ class ImprovedFeatureEngineer:
         
         print(f"   ✅ Created {len(feature_cols)} features")
         print(f"   ✅ Valid samples: {len(df)}\n")
+        feature_logger.info(f"✅ Created {len(feature_cols)} features")
+
+        
         
         return df[feature_cols], df['Close']
 
@@ -216,8 +227,8 @@ class ImprovedInformerTrainer:
                 
         return total_loss / len(val_loader)
     
-    def fit(self, train_loader, val_loader, epochs, patience=15):
-        """Train with warmup and cosine annealing"""
+    def fit(self, train_loader, val_loader, epochs, patience=30):
+        """Train with warmup and cosine annealing - with improved patience"""
         print("╔═══════════════════════════════════════════════════════════════════════════════╗")
         print("║                          TRAINING (IMPROVED INFORMER)                         ║")
         print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
@@ -225,11 +236,13 @@ class ImprovedInformerTrainer:
         print(f"🚀 Training Informer with Huber loss and learning rate scheduling")
         print(f"   Device: {self.device}")
         print(f"   Warmup epochs: {self.warmup_epochs}")
-        print(f"   Total epochs: {epochs}\n")
+        print(f"   Total epochs: {epochs}")
+        print(f"   Patience: {patience}\n")
         print("─" * 80)
         
         train_losses, val_losses = [], []
         patience_counter = 0
+        val_loss_threshold = 1e-6  # Minimum improvement threshold
         
         for epoch in range(epochs):
             self.epoch = epoch
@@ -246,7 +259,8 @@ class ImprovedInformerTrainer:
             
             current_lr = self.optimizer.param_groups[0]['lr']
             
-            if val_loss < self.best_val_loss:
+            # Check if validation loss improved by minimum threshold
+            if val_loss < self.best_val_loss - val_loss_threshold:
                 self.best_val_loss = val_loss
                 torch.save(self.model.state_dict(), 'informer/best_improved_informer.pth')
                 patience_counter = 0
@@ -255,7 +269,7 @@ class ImprovedInformerTrainer:
                 patience_counter += 1
                 status = f"⏳ ({patience_counter}/{patience})"
             
-            if (epoch + 1) % 5 == 0 or epoch == 0:
+            if (epoch + 1) % 5 == 0 or epoch == 0 or epoch == epochs - 1:
                 print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
                       f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} │ "
                       f"LR: {current_lr:.2e} │ {status}")
@@ -552,7 +566,7 @@ def main():
         'epochs': 100,
         'learning_rate': 0.0005,
         'warmup_epochs': 5,
-        'patience': 15,
+        'patience': 30,
         
         'train_ratio': 0.7,
         'val_ratio': 0.15,
