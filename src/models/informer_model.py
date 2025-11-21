@@ -36,6 +36,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import math
 
+# Import formatting utility
+from utils.misc import print_box
+
 # Set style
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
@@ -527,9 +530,7 @@ class InformerTrainer:
     
     def fit(self, train_loader, val_loader, epochs, label_len, pred_len, patience=10):
         """Train the model"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                          STEP 2: MODEL TRAINING                               ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+        print_box("\nMODEL TRAINING")
         
         train_losses = []
         val_losses = []
@@ -582,9 +583,7 @@ class InformerEvaluator:
     @staticmethod
     def evaluate(model, test_loader, device, scaler, config):
         """Evaluate model"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                         STEP 3: MODEL EVALUATION                              ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+        print_box("\nMODEL EVALUATION")
         
         model.eval()
         predictions = []
@@ -693,5 +692,5 @@ class InformerEvaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()

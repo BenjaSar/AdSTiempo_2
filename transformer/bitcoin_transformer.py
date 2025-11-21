@@ -42,19 +42,21 @@ from src.models.transformer_model import (
     RiskAnalyzer
 )
 
+# Import formatting utility
+from utils.misc import print_box
+
+# Set style
 plt.style.use('seaborn-v0_8-darkgrid')
+
+# Set random seeds
 torch.manual_seed(42)
 np.random.seed(42)
 
-print("""
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                                                                               ║
-║       BITCOIN TIME SERIES WITH TRANSFORMERS - RETURNS-BASED FORECASTING       ║
-║                     Production Implementation v2.0                            ║
-║                                                                               ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
-""")
-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+print_box("""\n
+BITCOIN TIME SERIES WITH TRANSFORMERS - RETURNS-BASED FORECASTING
+Production Implementation v2.0
+""",vertical_padding=1)
 
 # ============================================================================
 # IMPROVED FEATURE ENGINEERING
@@ -214,15 +216,13 @@ class ImprovedTrainer:
     
     def fit(self, train_loader, val_loader, epochs, patience=15):
         """Train with warmup and cosine annealing"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                          TRAINING (IMPROVED)                                  ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nTRAINING (IMPROVED)")
+
         print(f"🚀 Training with Huber loss and learning rate scheduling")
         print(f"   Device: {self.device}")
         print(f"   Warmup epochs: {self.warmup_epochs}")
         print(f"   Total epochs: {epochs}\n")
-        print("─" * 80)
+        print("─" * 81)
         
         train_losses, val_losses = [], []
         patience_counter = 0
@@ -260,8 +260,9 @@ class ImprovedTrainer:
                 print(f"\n⚠️  Early stopping at epoch {epoch+1}")
                 break
         
-        print("─" * 80)
-        print(f"✅ Best validation loss: {self.best_val_loss:.6f}\n")
+        print("─" * 81)
+        print(f"✅ Training completed!")
+        print(f"   Best validation loss: {self.best_val_loss:.6f}")
         
         return train_losses, val_losses
 
@@ -276,10 +277,8 @@ class ImprovedEvaluator:
     @staticmethod
     def evaluate(model, test_loader, device, scaler):
         """Evaluate and reconstruct prices from returns"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                         EVALUATION (IMPROVED)                                 ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nEVALUATION (IMPROVED)")
+
         model.eval()
         pred_returns, actual_returns, last_prices = [], [], []
         
@@ -362,10 +361,10 @@ class ImprovedEvaluator:
     def _print_metrics(metrics):
         """Print evaluation metrics"""
         print("📈 EVALUATION METRICS (Price Reconstruction)")
-        print("─" * 90)
+        print("─" * 81)
         print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} "
               f"{'MAPE':>10} {'Dir%':>10}")
-        print("─" * 90)
+        print("─" * 81)
         
         for day, m in metrics.items():
             print(f"{day:<12} "
@@ -375,7 +374,7 @@ class ImprovedEvaluator:
                   f"{m['MAPE']:>9.2f}% "
                   f"{m['Dir_Acc']:>9.1f}%")
         
-        print("─" * 90)
+        print("─" * 81)
         
         # Averages
         avg_rmse = np.mean([m['RMSE'] for m in metrics.values()])
@@ -390,7 +389,7 @@ class ImprovedEvaluator:
               f"{avg_r2:>9.4f} "
               f"{avg_mape:>9.2f}% "
               f"{avg_dir:>9.1f}%")
-        print("─" * 90 + "\n")
+        print("─" * 81 + "\n")
     
     @staticmethod
     def plot_predictions(predictions, actuals, save_path='transformer/results/03_predictions.png'):
@@ -423,7 +422,7 @@ class ImprovedEvaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
     
     @staticmethod
@@ -482,7 +481,7 @@ class ImprovedEvaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
     
     @staticmethod
@@ -517,7 +516,7 @@ class ImprovedEvaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
 
 
@@ -545,7 +544,7 @@ def main():
         
         # Training parameters
         'batch_size': 32,
-        'epochs': 2, #100
+        'epochs': 100,
         'learning_rate': 0.0005,  # -> Slightly lower
         'warmup_epochs': 5,
         'patience': 15,
@@ -559,7 +558,7 @@ def main():
     }
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"⚙️  Device: {device}\n")
+    print(f"⚙️  Device: {device} | PyTorch version: {torch.__version__}\n")
     
     # ETL
     df, is_real = BitcoinDataLoader.load_data(
@@ -567,8 +566,6 @@ def main():
         start_date=CONFIG['start_date'],
         end_date=CONFIG['end_date']
     )
-    
-    print(f"✅ Loaded {len(df)} days of {'real' if is_real else 'synthetic'} data\n")
     
     # EDA
     eda = BitcoinEDA(df, is_real_data=is_real)
@@ -601,9 +598,10 @@ def main():
     test_prices = prices_array[train_size + val_size:]
     
     print(f"📊 Data split:")
-    print(f"   Training:   {len(train_features)} samples")
-    print(f"   Validation: {len(val_features)} samples")
-    print(f"   Test:       {len(test_features)} samples\n")
+    print(f"   Training set:   {len(train_features)} samples ({CONFIG['train_ratio']*100:.0f}%)")
+    print(f"   Validation set: {len(val_features)} samples ({CONFIG['val_ratio']*100:.0f}%)")
+    print(f"   Test set:       {len(test_features)} samples ({(1-CONFIG['train_ratio']-CONFIG['val_ratio'])*100:.0f}%)")
+    print(f"   Total:          {n} samples\n")
     
     # Create datasets
     train_dataset = ReturnsDataset(train_features, train_prices, 
@@ -635,7 +633,7 @@ def main():
     print(f"   Prediction horizon:  {CONFIG['pred_len']} days")
     print(f"   Model dimension:     {CONFIG['d_model']}")
     print(f"   Layers:              {CONFIG['num_layers']}")
-    print(f"   Total parameters:    {sum(p.numel() for p in model.parameters()):,}\n")
+    print(f"   Total parameters:    {sum(p.numel() for p in model.parameters()):,}")
     
     # Train
     trainer = ImprovedTrainer(
@@ -665,10 +663,11 @@ def main():
     # Plot training history
     ImprovedEvaluator.plot_training_history(train_losses, val_losses)
     
-    print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-    print("║                        IMPROVEMENTS SUMMARY                                   ║")
-    print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-    
+    # ========================================
+    # SUMMARY
+    # ========================================
+    print_box("\nIMPROVEMENTS SUMMARY")
+
     print("✅ Applied improvements:")
     print("   1. ✅ Train on log-returns instead of prices")
     print("   2. ✅ Use MinMaxScaler for better normalization")
@@ -677,17 +676,20 @@ def main():
     print("   5. ✅ Reduced sequence length (10 days)")
     print("   6. ✅ Reduced model layers (2 instead of 3)")
     print("   7. ✅ Enhanced feature engineering")
-    print("   8. ✅ Gradient clipping for stability")
-    print()
+    print("   8. ✅ Gradient clipping for stability"+"\n")
     
     avg_r2 = np.mean([m['R2'] for m in metrics.values()])
     avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
     
     print(f"📊 Final Results:")
     print(f"   Average R²:   {avg_r2:.4f}")
-    print(f"   Average MAPE: {avg_mape:.2f}%")
-    print()
+    print(f"   Average MAPE: {avg_mape:.2f}%\n")
 
+    print("🏆 Pipeline completed successfully!\n")
+
+    print_box() # Line break
+    print("📈 Thank you for using Bitcoin LSTM Forecasting System!")
+    
     # return {
     #     'model': model,
     #     'scaler': scaler,
@@ -710,7 +712,7 @@ if __name__ == "__main__":
         results = main()
         
         # # Optional: Feature importance analysis
-        # print("\n" + "=" * 80)
+        # print_box() # Line break
         # response = input("Would you like to perform feature importance analysis? (y/n): ")
         # if response.lower() == 'y':
         #     # Use a subset of test data for feature importance
@@ -736,7 +738,7 @@ if __name__ == "__main__":
         #     )
         
         # # Optional: Risk analysis
-        # print("\n" + "=" * 80)
+        # print_box() # Line break
         # response = input("Would you like to perform risk analysis? (y/n): ")
         # if response.lower() == 'y':
         #     # Get historical returns
@@ -748,9 +750,7 @@ if __name__ == "__main__":
         #         historical_returns
         #     )
         
-        # print("\n" + "╔" + "═" * 78 + "╗")
-        # print("║" + " " * 20 + "ALL ANALYSES COMPLETED SUCCESSFULLY!" + " " * 22 + "║")
-        # print("╚" + "═" * 78 + "╝\n")
+        # print_box("ALL ANALYSES COMPLETED SUCCESSFULLY!")
         
     except KeyboardInterrupt:
         print("\n\n⚠️  Execution interrupted by user")

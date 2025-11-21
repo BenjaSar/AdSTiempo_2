@@ -5,6 +5,7 @@ This module provides functionality to load real Bitcoin data from Yahoo Finance
 and generate realistic synthetic Bitcoin data for analysis and modeling.
 """
 
+import functools
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -28,6 +29,9 @@ except ImportError:
     YFINANCE_AVAILABLE = False
     print("⚠️  yfinance not available. Install with: pip install yfinance")
     print("   Using synthetic data instead...\n")
+
+# Import formatting utility
+from utils.misc import print_box
 
 # Set style
 plt.style.use('seaborn-v0_8-darkgrid')
@@ -111,8 +115,22 @@ class BitcoinDataLoader:
         print(f"   Date range: {df.index.min().date()} to {df.index.max().date()}\n")
         
         return df
+
+    def print_status(func):
+        """Decorador que imprime el estado de la carga de datos."""
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            df, is_real = func(*args, **kwargs) # Ejecuta el método original (load_data)
+            
+            if df is not None:
+                status_message = f"✅ Loaded {len(df)} days of {'real' if is_real else 'synthetic'} data.\n"
+                print(status_message)
+    
+            return df, is_real
+        return wrapper
     
     @classmethod
+    @print_status
     def load_data(cls, use_real_data=True, start_date='2020-01-01', end_date=None):
         """Load data (real if available, otherwise synthetic)"""
         if use_real_data and YFINANCE_AVAILABLE:
@@ -137,10 +155,8 @@ class BitcoinEDA:
         
     def run_full_eda(self):
         """Execute complete EDA pipeline"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                         EXPLORATORY DATA ANALYSIS (EDA)                       ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nEXPLORATORY DATA ANALYSIS (EDA)")
+
         self._basic_stats()
         self._analyze_returns()
         self._plot_comprehensive_eda()
@@ -148,7 +164,7 @@ class BitcoinEDA:
     def _basic_stats(self):
         """Display basic statistics"""
         print("📊 BASIC STATISTICS")
-        print("─" * 80)
+        print("─" * 81)
         print(f"Dataset Shape: {self.df.shape[0]} days × {self.df.shape[1]} features")
         print(f"Date Range: {self.df.index.min().date()} to {self.df.index.max().date()}")
         print(f"Trading Days: {len(self.df)}")
@@ -167,7 +183,7 @@ class BitcoinEDA:
         returns = self.df['Close'].pct_change().dropna()
         
         print(f"\n📈 RETURNS ANALYSIS")
-        print("─" * 80)
+        print("─" * 81)
         print(f"Mean Daily Return: {returns.mean()*100:.3f}%")
         print(f"Daily Volatility: {returns.std()*100:.3f}%")
         print(f"Annualized Return: {returns.mean()*365*100:.2f}%")

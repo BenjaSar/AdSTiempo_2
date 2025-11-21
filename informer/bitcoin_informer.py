@@ -36,19 +36,21 @@ from utils.etl import BitcoinDataLoader
 # Import Informer architecture
 from src.models.informer_model import Informer
 
+# Import formatting utility
+from utils.misc import print_box
+
+# Set style
 plt.style.use('seaborn-v0_8-darkgrid')
+
+# Set random seeds
 torch.manual_seed(42)
 np.random.seed(42)
 
-print("""
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                                                                               ║
-║   INFORMER: EFFICIENT LONG-SEQUENCE FORECASTING - RETURNS-BASED FORECASTING   ║
-║                     Production Implementation v2.0                            ║
-║                                                                               ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
-""")
-
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+print_box("""\n
+INFORMER: EFFICIENT LONG-SEQUENCE FORECASTING - RETURNS-BASED FORECASTING
+Production Implementation v2.0
+""",vertical_padding=1)
 
 # ============================================================================
 # IMPROVED FEATURE ENGINEERING (same as transformer improved)
@@ -220,15 +222,13 @@ class ImprovedInformerTrainer:
     
     def fit(self, train_loader, val_loader, epochs, patience=15):
         """Train with warmup and cosine annealing"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                          TRAINING (IMPROVED INFORMER)                         ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+        print_box("\nTRAINING (IMPROVED)")
         
         print(f"🚀 Training Informer with Huber loss and learning rate scheduling")
         print(f"   Device: {self.device}")
         print(f"   Warmup epochs: {self.warmup_epochs}")
         print(f"   Total epochs: {epochs}\n")
-        print("─" * 80)
+        print("─" * 81)
         
         train_losses, val_losses = [], []
         patience_counter = 0
@@ -266,8 +266,9 @@ class ImprovedInformerTrainer:
                 print(f"\n⚠️  Early stopping at epoch {epoch+1}")
                 break
         
-        print("─" * 80)
-        print(f"✅ Best validation loss: {self.best_val_loss:.6f}\n")
+        print("─" * 81)
+        print(f"✅ Training completed!")
+        print(f"   Best validation loss: {self.best_val_loss:.6f}")
         
         return train_losses, val_losses
 
@@ -282,10 +283,8 @@ class ImprovedInformerEvaluator:
     @staticmethod
     def evaluate(model, test_loader, device, scaler):
         """Evaluate and reconstruct prices from returns"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                         EVALUATION (IMPROVED INFORMER)                        ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nEVALUATION (IMPROVED)")
+
         model.eval()
         pred_returns, actual_returns, last_prices = [], [], []
         
@@ -369,10 +368,10 @@ class ImprovedInformerEvaluator:
     def _print_metrics(metrics):
         """Print evaluation metrics"""
         print("📈 EVALUATION METRICS (Price Reconstruction)")
-        print("─" * 90)
+        print("─" * 81)
         print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} "
               f"{'MAPE':>10} {'Dir%':>10}")
-        print("─" * 90)
+        print("─" * 81)
         
         for day, m in metrics.items():
             print(f"{day:<12} "
@@ -382,7 +381,7 @@ class ImprovedInformerEvaluator:
                   f"{m['MAPE']:>9.2f}% "
                   f"{m['Dir_Acc']:>9.1f}%")
         
-        print("─" * 90)
+        print("─" * 81)
         
         # Averages
         avg_rmse = np.mean([m['RMSE'] for m in metrics.values()])
@@ -397,7 +396,7 @@ class ImprovedInformerEvaluator:
               f"{avg_r2:>9.4f} "
               f"{avg_mape:>9.2f}% "
               f"{avg_dir:>9.1f}%")
-        print("─" * 90 + "\n")
+        print("─" * 81 + "\n")
     
     @staticmethod
     def plot_predictions(predictions, actuals, save_path='informer/results/03_predictions.png'):
@@ -430,7 +429,7 @@ class ImprovedInformerEvaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
     
     @staticmethod
@@ -488,7 +487,7 @@ class ImprovedInformerEvaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
     
     @staticmethod
@@ -523,7 +522,7 @@ class ImprovedInformerEvaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
 
 
@@ -554,7 +553,7 @@ def main():
 
         # Training parameters
         'batch_size': 32,
-        'epochs': 2, #100
+        'epochs': 100,
         'learning_rate': 0.0005, # -> Slightly lower
         'warmup_epochs': 5,
         'patience': 15,
@@ -565,7 +564,7 @@ def main():
     }
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"⚙️  Device: {device}\n")
+    print(f"⚙️  Device: {device} | PyTorch version: {torch.__version__}\n")
     
     # Load data
     df, is_real = BitcoinDataLoader.load_data(
@@ -573,8 +572,6 @@ def main():
         start_date=CONFIG['start_date'],
         end_date=CONFIG['end_date']
     )
-    
-    print(f"✅ Loaded {len(df)} days of {'real' if is_real else 'synthetic'} data\n")
     
     # Feature engineering
     features_df, prices = ImprovedFeatureEngineer.create_features(df)
@@ -603,9 +600,10 @@ def main():
     test_prices = prices_array[train_size + val_size:]
     
     print(f"📊 Data split:")
-    print(f"   Training:   {len(train_features)} samples")
-    print(f"   Validation: {len(val_features)} samples")
-    print(f"   Test:       {len(test_features)} samples\n")
+    print(f"   Training set:   {len(train_features)} samples ({CONFIG['train_ratio']*100:.0f}%)")
+    print(f"   Validation set: {len(val_features)} samples ({CONFIG['val_ratio']*100:.0f}%)")
+    print(f"   Test set:       {len(test_features)} samples ({(1-CONFIG['train_ratio']-CONFIG['val_ratio'])*100:.0f}%)")
+    print(f"   Total:          {n} samples\n")
     
     # Create datasets
     train_dataset = InformerReturnsDataset(
@@ -680,10 +678,11 @@ def main():
     # Plot training history
     ImprovedInformerEvaluator.plot_training_history(train_losses, val_losses)
     
-    print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-    print("║                        IMPROVEMENTS SUMMARY                                   ║")
-    print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-    
+    # ========================================
+    # SUMMARY
+    # ========================================
+    print_box("\nIMPROVEMENTS SUMMARY")
+
     print("✅ Applied improvements (same as Transformer):")
     print("   1. ✅ Train on log-returns instead of prices")
     print("   2. ✅ Use MinMaxScaler for better normalization")
@@ -693,17 +692,19 @@ def main():
     print("   6. ✅ Reduced model layers (2 encoder, 1 decoder)")
     print("   7. ✅ Enhanced feature engineering")
     print("   8. ✅ Gradient clipping for stability")
-    print("   9. ✅ ProbSparse attention for efficiency")
-    print()
+    print("   9. ✅ ProbSparse attention for efficiency"+"\n")
     
     avg_r2 = np.mean([m['R2'] for m in metrics.values()])
     avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
     
     print(f"📊 Final Results:")
     print(f"   Average R²:   {avg_r2:.4f}")
-    print(f"   Average MAPE: {avg_mape:.2f}%")
-    print()
+    print(f"   Average MAPE: {avg_mape:.2f}%\n")
 
+    print("🏆 Pipeline completed successfully!\n")
+
+    print_box() # Line break
+    print("📈 Thank you for using Bitcoin LSTM Forecasting System!")    
 
 if __name__ == "__main__":
     import matplotlib

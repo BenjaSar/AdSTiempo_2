@@ -24,7 +24,10 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-# # Set style
+# Import formatting utility
+from utils.misc import print_box
+
+# Set style
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
 
@@ -198,10 +201,8 @@ class TransformerTrainer:
     
     def fit(self, train_loader, val_loader, epochs, patience=10):
         """Train the model"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                          STEP 3: MODEL TRAINING                               ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nMODEL TRAINING")
+
         train_losses = []
         val_losses = []
         patience_counter = 0
@@ -294,9 +295,7 @@ class Evaluator:
     @staticmethod
     def evaluate(model, test_loader, device, scaler, close_idx=0):
         """Evaluate model on test set"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                         STEP 4: MODEL EVALUATION                              ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+        print_box("\nMODEL EVALUATION")
         
         model.eval()
         predictions = []
@@ -496,7 +495,7 @@ class Evaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
 
 
@@ -513,10 +512,7 @@ class FutureForecaster:
         """
         Recursive forecasting: predict one step, use it for next prediction
         """
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                        STEP 5: FUTURE FORECASTING                             ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nFUTURE FORECASTING")
         print(f"🔮 Generating {n_days}-day forecast...")
         
         model.eval()
@@ -617,7 +613,7 @@ class FutureForecaster:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
 
 
@@ -842,7 +838,7 @@ class FutureForecaster:
 #     print(f"   Expected 30-day Return:     {((forecasts[-1] / df['Close'].iloc[-1] - 1) * 100):.2f}%")
     
 #     print("\n" + "=" * 80)
-#     print("🎉 Thank you for using Bitcoin Transformer Forecasting System!")
+#     print("📈 Thank you for using Bitcoin Transformer Forecasting System!")
 #     print("=" * 80 + "\n")
     
 #     return {

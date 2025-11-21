@@ -20,309 +20,309 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import os
+import warnings
+warnings.filterwarnings('ignore')
 
-# Try to import yfinance for real data
-try:
-    import yfinance as yf
-    YFINANCE_AVAILABLE = True
-except ImportError:
-    YFINANCE_AVAILABLE = False
-    print("⚠️  yfinance not available. Install with: pip install yfinance")
-    print("   Using synthetic data instead...\n")
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Import from ETL module
+from utils.etl import BitcoinDataLoader, BitcoinEDA
+
+# Import formatting utility
+from utils.misc import print_box
 
 # Set style
 plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
 
 # Set random seeds
 torch.manual_seed(42)
 np.random.seed(42)
 
-print("""
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                                                                               ║
-║                BITCOIN TIME SERIES FORECASTING WITH LSTM                      ║
-║                     Production Implementation v1.0                            ║
-║                                                                               ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
-""")
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+print()
+print_box("""\n
+BITCOIN TIME SERIES FORECASTING WITH LSTM
+Production Implementation v1.0
+""",vertical_padding=1)
 
 # ============================================================================
-# DATA LOADER
+# # DATA LOADER
 # ============================================================================
 
-class BitcoinDataLoader:
-    """Load Bitcoin data from Yahoo Finance or generate synthetic data"""
+# class BitcoinDataLoader:
+#     """Load Bitcoin data from Yahoo Finance or generate synthetic data"""
     
-    @staticmethod
-    def load_real_data(start_date='2020-01-01', end_date=None):
-        """Load real Bitcoin data from Yahoo Finance"""
-        if not YFINANCE_AVAILABLE:
-            return None
+#     @staticmethod
+#     def load_real_data(start_date='2020-01-01', end_date=None):
+#         """Load real Bitcoin data from Yahoo Finance"""
+#         if not YFINANCE_AVAILABLE:
+#             return None
         
-        try:
-            print(f"📥 Downloading Bitcoin data from {start_date} to {end_date or 'today'}...")
-            btc = yf.download('BTC-USD', start=start_date, end=end_date, progress=False)
+#         try:
+#             print(f"📥 Downloading Bitcoin data from {start_date} to {end_date or 'today'}...")
+#             btc = yf.download('BTC-USD', start=start_date, end=end_date, progress=False)
             
-            if len(btc) == 0:
-                print("⚠️  No data returned from Yahoo Finance")
-                return None
+#             if len(btc) == 0:
+#                 print("⚠️  No data returned from Yahoo Finance")
+#                 return None
             
-            # Rename columns to standard format
-            df = btc[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
-            df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+#             # Rename columns to standard format
+#             df = btc[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
+#             df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
             
-            print(f"✅ Downloaded {len(df)} days of Bitcoin data")
-            print(f"   Date range: {df.index.min().date()} to {df.index.max().date()}")
-            print(f"   Latest price: ${df['Close'].iloc[-1]:,.2f}\n")
+#             print(f"✅ Downloaded {len(df)} days of Bitcoin data")
+#             print(f"   Date range: {df.index.min().date()} to {df.index.max().date()}")
+#             print(f"   Latest price: ${df['Close'].iloc[-1]:,.2f}\n")
             
-            return df
+#             return df
             
-        except Exception as e:
-            print(f"⚠️  Error downloading data: {e}")
-            return None
+#         except Exception as e:
+#             print(f"⚠️  Error downloading data: {e}")
+#             return None
     
-    @staticmethod
-    def generate_synthetic_data(start_date='2020-01-01', end_date='2024-10-01'):
-        """Generate realistic synthetic Bitcoin data"""
-        print("🔧 Generating synthetic Bitcoin data...")
+#     @staticmethod
+#     def generate_synthetic_data(start_date='2020-01-01', end_date='2024-10-01'):
+#         """Generate realistic synthetic Bitcoin data"""
+#         print("🔧 Generating synthetic Bitcoin data...")
         
-        dates = pd.date_range(start=start_date, end=end_date, freq='D')
-        n = len(dates)
+#         dates = pd.date_range(start=start_date, end=end_date, freq='D')
+#         n = len(dates)
         
-        # Realistic Bitcoin price simulation
-        np.random.seed(42)
+#         # Realistic Bitcoin price simulation
+#         np.random.seed(42)
         
-        # Components
-        trend = np.linspace(10000, 65000, n)  # Long-term uptrend
-        seasonal = 5000 * np.sin(2 * np.pi * np.arange(n) / 365)  # Annual cycle
-        cycles = 3000 * np.sin(2 * np.pi * np.arange(n) / 90)  # Quarterly cycle
-        noise = np.random.normal(0, 1500, n).cumsum() * 0.15  # Random walk
-        volatility = np.random.normal(0, 800, n)  # Daily volatility
+#         # Components
+#         trend = np.linspace(10000, 65000, n)  # Long-term uptrend
+#         seasonal = 5000 * np.sin(2 * np.pi * np.arange(n) / 365)  # Annual cycle
+#         cycles = 3000 * np.sin(2 * np.pi * np.arange(n) / 90)  # Quarterly cycle
+#         noise = np.random.normal(0, 1500, n).cumsum() * 0.15  # Random walk
+#         volatility = np.random.normal(0, 800, n)  # Daily volatility
         
-        # Combine components
-        close_price = trend + seasonal + cycles + noise + volatility
-        close_price = np.maximum(close_price, 5000)  # Floor price
+#         # Combine components
+#         close_price = trend + seasonal + cycles + noise + volatility
+#         close_price = np.maximum(close_price, 5000)  # Floor price
         
-        # Generate OHLC
-        df = pd.DataFrame({
-            'Open': close_price * (1 + np.random.uniform(-0.015, 0.015, n)),
-            'High': close_price * (1 + np.random.uniform(0.005, 0.025, n)),
-            'Low': close_price * (1 + np.random.uniform(-0.025, -0.005, n)),
-            'Close': close_price,
-            'Volume': np.random.uniform(2e9, 5e10, n)
-        }, index=dates)
+#         # Generate OHLC
+#         df = pd.DataFrame({
+#             'Open': close_price * (1 + np.random.uniform(-0.015, 0.015, n)),
+#             'High': close_price * (1 + np.random.uniform(0.005, 0.025, n)),
+#             'Low': close_price * (1 + np.random.uniform(-0.025, -0.005, n)),
+#             'Close': close_price,
+#             'Volume': np.random.uniform(2e9, 5e10, n)
+#         }, index=dates)
         
-        # Ensure High >= Close >= Low
-        df['High'] = df[['High', 'Close', 'Open']].max(axis=1)
-        df['Low'] = df[['Low', 'Close', 'Open']].min(axis=1)
+#         # Ensure High >= Close >= Low
+#         df['High'] = df[['High', 'Close', 'Open']].max(axis=1)
+#         df['Low'] = df[['Low', 'Close', 'Open']].min(axis=1)
         
-        print(f"✅ Generated {len(df)} days of synthetic data")
-        print(f"   Date range: {df.index.min().date()} to {df.index.max().date()}\n")
+#         print(f"✅ Generated {len(df)} days of synthetic data")
+#         print(f"   Date range: {df.index.min().date()} to {df.index.max().date()}\n")
         
-        return df
+#         return df
     
-    @classmethod
-    def load_data(cls, use_real_data=True, start_date='2020-01-01', end_date=None):
-        """Load data (real if available, otherwise synthetic)"""
-        if use_real_data and YFINANCE_AVAILABLE:
-            df = cls.load_real_data(start_date, end_date)
-            if df is not None:
-                return df, True
+#     @classmethod
+#     def load_data(cls, use_real_data=True, start_date='2020-01-01', end_date=None):
+#         """Load data (real if available, otherwise synthetic)"""
+#         if use_real_data and YFINANCE_AVAILABLE:
+#             df = cls.load_real_data(start_date, end_date)
+#             if df is not None:
+#                 return df, True
         
-        # Fallback to synthetic data
-        return cls.generate_synthetic_data(start_date, end_date or '2024-10-01'), False
+#         # Fallback to synthetic data
+#         return cls.generate_synthetic_data(start_date, end_date or '2024-10-01'), False
 
 
-# ============================================================================
-# EDA MODULE
-# ============================================================================
+# # ============================================================================
+# # EDA MODULE
+# # ============================================================================
 
-class BitcoinEDA:
-    """Comprehensive Exploratory Data Analysis"""
+# class BitcoinEDA:
+#     """Comprehensive Exploratory Data Analysis"""
     
-    def __init__(self, df, is_real_data=False):
-        self.df = df.copy()
-        self.is_real_data = is_real_data
+#     def __init__(self, df, is_real_data=False):
+#         self.df = df.copy()
+#         self.is_real_data = is_real_data
         
-    def run_full_eda(self):
-        """Execute complete EDA pipeline"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                      STEP 1: EXPLORATORY DATA ANALYSIS                        ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+#     def run_full_eda(self):
+#         """Execute complete EDA pipeline"""
+#         print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+#         print("║                      STEP 1: EXPLORATORY DATA ANALYSIS                        ║")
+#         print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
         
-        self._basic_stats()
-        self._analyze_returns()
-        self._plot_comprehensive_eda()
+#         self._basic_stats()
+#         self._analyze_returns()
+#         self._plot_comprehensive_eda()
         
-    def _basic_stats(self):
-        """Display basic statistics"""
-        print("📊 BASIC STATISTICS")
-        print("─" * 80)
-        print(f"Dataset Shape: {self.df.shape[0]} days × {self.df.shape[1]} features")
-        print(f"Date Range: {self.df.index.min().date()} to {self.df.index.max().date()}")
-        print(f"Trading Days: {len(self.df)}")
-        print(f"Data Type: {'Real (Yahoo Finance)' if self.is_real_data else 'Synthetic'}")
-        print(f"\nMissing Values:\n{self.df.isnull().sum()}")
+#     def _basic_stats(self):
+#         """Display basic statistics"""
+#         print("📊 BASIC STATISTICS")
+#         print("─" * 81)
+#         print(f"Dataset Shape: {self.df.shape[0]} days × {self.df.shape[1]} features")
+#         print(f"Date Range: {self.df.index.min().date()} to {self.df.index.max().date()}")
+#         print(f"Trading Days: {len(self.df)}")
+#         print(f"Data Type: {'Real (Yahoo Finance)' if self.is_real_data else 'Synthetic'}")
+#         print(f"\nMissing Values:\n{self.df.isnull().sum()}")
         
-        print(f"\nPrice Statistics:")
-        print(f"  Current Price: ${self.df['Close'].iloc[-1]:,.2f}")
-        print(f"  Highest Price: ${self.df['High'].max():,.2f}")
-        print(f"  Lowest Price: ${self.df['Low'].min():,.2f}")
-        print(f"  Average Price: ${self.df['Close'].mean():,.2f}")
-        print(f"  Std Deviation: ${self.df['Close'].std():,.2f}")
+#         print(f"\nPrice Statistics:")
+#         print(f"  Current Price: ${self.df['Close'].iloc[-1]:,.2f}")
+#         print(f"  Highest Price: ${self.df['High'].max():,.2f}")
+#         print(f"  Lowest Price: ${self.df['Low'].min():,.2f}")
+#         print(f"  Average Price: ${self.df['Close'].mean():,.2f}")
+#         print(f"  Std Deviation: ${self.df['Close'].std():,.2f}")
         
-    def _analyze_returns(self):
-        """Analyze return characteristics"""
-        returns = self.df['Close'].pct_change().dropna()
+#     def _analyze_returns(self):
+#         """Analyze return characteristics"""
+#         returns = self.df['Close'].pct_change().dropna()
         
-        print(f"\n📈 RETURNS ANALYSIS")
-        print("─" * 80)
-        print(f"Mean Daily Return: {returns.mean()*100:.3f}%")
-        print(f"Daily Volatility: {returns.std()*100:.3f}%")
-        print(f"Annualized Return: {returns.mean()*365*100:.2f}%")
-        print(f"Annualized Volatility: {returns.std()*np.sqrt(365)*100:.2f}%")
-        print(f"Sharpe Ratio (Rf=0): {returns.mean()/returns.std()*np.sqrt(365):.3f}")
-        print(f"Max Daily Gain: {returns.max()*100:.2f}%")
-        print(f"Max Daily Loss: {returns.min()*100:.2f}%")
+#         print(f"\n📈 RETURNS ANALYSIS")
+#         print("─" * 81)
+#         print(f"Mean Daily Return: {returns.mean()*100:.3f}%")
+#         print(f"Daily Volatility: {returns.std()*100:.3f}%")
+#         print(f"Annualized Return: {returns.mean()*365*100:.2f}%")
+#         print(f"Annualized Volatility: {returns.std()*np.sqrt(365)*100:.2f}%")
+#         print(f"Sharpe Ratio (Rf=0): {returns.mean()/returns.std()*np.sqrt(365):.3f}")
+#         print(f"Max Daily Gain: {returns.max()*100:.2f}%")
+#         print(f"Max Daily Loss: {returns.min()*100:.2f}%")
         
-    def _plot_comprehensive_eda(self):
-        """Create comprehensive EDA visualizations"""
-        print(f"\n📊 Creating visualizations...")
+#     def _plot_comprehensive_eda(self):
+#         """Create comprehensive EDA visualizations"""
+#         print(f"\n📊 Creating visualizations...")
         
-        # Figure 1: Price Analysis
-        fig1 = plt.figure(figsize=(18, 12))
-        gs1 = fig1.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
+#         # Figure 1: Price Analysis
+#         fig1 = plt.figure(figsize=(18, 12))
+#         gs1 = fig1.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
         
-        # 1.1 Price trend with volume
-        ax1 = fig1.add_subplot(gs1[0, :])
-        ax1.plot(self.df.index, self.df['Close'], label='Close Price', 
-                color='#2E86AB', linewidth=2)
-        ax1.fill_between(self.df.index, self.df['Low'], self.df['High'], 
-                         alpha=0.2, color='#A23B72')
-        ax1.set_title('Bitcoin Price Trend with High-Low Range', 
-                     fontsize=16, fontweight='bold', pad=20)
-        ax1.set_ylabel('Price (USD)', fontsize=12)
-        ax1.legend(loc='upper left', fontsize=10)
-        ax1.grid(True, alpha=0.3)
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+#         # 1.1 Price trend with volume
+#         ax1 = fig1.add_subplot(gs1[0, :])
+#         ax1.plot(self.df.index, self.df['Close'], label='Close Price', 
+#                 color='#2E86AB', linewidth=2)
+#         ax1.fill_between(self.df.index, self.df['Low'], self.df['High'], 
+#                          alpha=0.2, color='#A23B72')
+#         ax1.set_title('Bitcoin Price Trend with High-Low Range', 
+#                      fontsize=16, fontweight='bold', pad=20)
+#         ax1.set_ylabel('Price (USD)', fontsize=12)
+#         ax1.legend(loc='upper left', fontsize=10)
+#         ax1.grid(True, alpha=0.3)
+#         ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
         
-        # Volume on secondary axis
-        ax1_vol = ax1.twinx()
-        ax1_vol.bar(self.df.index, self.df['Volume'], alpha=0.3, color='green', 
-                   label='Volume')
-        ax1_vol.set_ylabel('Volume', fontsize=12)
-        ax1_vol.legend(loc='upper right', fontsize=10)
+#         # Volume on secondary axis
+#         ax1_vol = ax1.twinx()
+#         ax1_vol.bar(self.df.index, self.df['Volume'], alpha=0.3, color='green', 
+#                    label='Volume')
+#         ax1_vol.set_ylabel('Volume', fontsize=12)
+#         ax1_vol.legend(loc='upper right', fontsize=10)
         
-        # 1.2 Returns distribution
-        ax2 = fig1.add_subplot(gs1[1, 0])
-        returns = self.df['Close'].pct_change().dropna()
-        ax2.hist(returns, bins=50, color='#F18F01', alpha=0.7, edgecolor='black')
-        ax2.axvline(returns.mean(), color='red', linestyle='--', linewidth=2, 
-                   label=f'Mean: {returns.mean()*100:.3f}%')
-        ax2.set_title('Daily Returns Distribution', fontsize=14, fontweight='bold')
-        ax2.set_xlabel('Daily Return')
-        ax2.set_ylabel('Frequency')
-        ax2.legend()
-        ax2.grid(True, alpha=0.3)
+#         # 1.2 Returns distribution
+#         ax2 = fig1.add_subplot(gs1[1, 0])
+#         returns = self.df['Close'].pct_change().dropna()
+#         ax2.hist(returns, bins=50, color='#F18F01', alpha=0.7, edgecolor='black')
+#         ax2.axvline(returns.mean(), color='red', linestyle='--', linewidth=2, 
+#                    label=f'Mean: {returns.mean()*100:.3f}%')
+#         ax2.set_title('Daily Returns Distribution', fontsize=14, fontweight='bold')
+#         ax2.set_xlabel('Daily Return')
+#         ax2.set_ylabel('Frequency')
+#         ax2.legend()
+#         ax2.grid(True, alpha=0.3)
         
-        # 1.3 QQ plot
-        ax3 = fig1.add_subplot(gs1[1, 1])
-        from scipy import stats
-        stats.probplot(returns, dist="norm", plot=ax3)
-        ax3.set_title('Q-Q Plot (Normality Check)', fontsize=14, fontweight='bold')
-        ax3.grid(True, alpha=0.3)
+#         # 1.3 QQ plot
+#         ax3 = fig1.add_subplot(gs1[1, 1])
+#         from scipy import stats
+#         stats.probplot(returns, dist="norm", plot=ax3)
+#         ax3.set_title('Q-Q Plot (Normality Check)', fontsize=14, fontweight='bold')
+#         ax3.grid(True, alpha=0.3)
         
-        # 1.4 Rolling volatility
-        ax4 = fig1.add_subplot(gs1[2, 0])
-        volatility_30 = returns.rolling(window=30).std() * np.sqrt(365) * 100
-        ax4.plot(self.df.index[1:], volatility_30, color='#C73E1D', linewidth=2)
-        ax4.set_title('30-Day Rolling Volatility (Annualized)', 
-                     fontsize=14, fontweight='bold')
-        ax4.set_ylabel('Volatility (%)')
-        ax4.set_xlabel('Date')
-        ax4.grid(True, alpha=0.3)
-        ax4.fill_between(self.df.index[1:], volatility_30, alpha=0.3, color='#C73E1D')
+#         # 1.4 Rolling volatility
+#         ax4 = fig1.add_subplot(gs1[2, 0])
+#         volatility_30 = returns.rolling(window=30).std() * np.sqrt(365) * 100
+#         ax4.plot(self.df.index[1:], volatility_30, color='#C73E1D', linewidth=2)
+#         ax4.set_title('30-Day Rolling Volatility (Annualized)', 
+#                      fontsize=14, fontweight='bold')
+#         ax4.set_ylabel('Volatility (%)')
+#         ax4.set_xlabel('Date')
+#         ax4.grid(True, alpha=0.3)
+#         ax4.fill_between(self.df.index[1:], volatility_30, alpha=0.3, color='#C73E1D')
         
-        # 1.5 Correlation heatmap
-        ax5 = fig1.add_subplot(gs1[2, 1])
-        corr = self.df[['Open', 'High', 'Low', 'Close', 'Volume']].corr()
-        sns.heatmap(corr, annot=True, fmt='.3f', cmap='RdYlGn', center=0, 
-                   ax=ax5, cbar_kws={'shrink': 0.8}, vmin=-1, vmax=1)
-        ax5.set_title('Feature Correlation Matrix', fontsize=14, fontweight='bold')
+#         # 1.5 Correlation heatmap
+#         ax5 = fig1.add_subplot(gs1[2, 1])
+#         corr = self.df[['Open', 'High', 'Low', 'Close', 'Volume']].corr()
+#         sns.heatmap(corr, annot=True, fmt='.3f', cmap='RdYlGn', center=0, 
+#                    ax=ax5, cbar_kws={'shrink': 0.8}, vmin=-1, vmax=1)
+#         ax5.set_title('Feature Correlation Matrix', fontsize=14, fontweight='bold')
         
-        plt.savefig('lstm/results/01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: 01_comprehensive_eda.png")
-        plt.close()
+#         plt.savefig('lstm/results/01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
+#         print("   ✅ Saved: 01_comprehensive_eda.png")
+#         plt.close()
         
-        # Figure 2: Advanced Analysis
-        self._plot_advanced_analysis()
+#         # Figure 2: Advanced Analysis
+#         self._plot_advanced_analysis()
         
-    def _plot_advanced_analysis(self):
-        """Advanced analysis plots"""
-        fig2, axes = plt.subplots(2, 2, figsize=(16, 10))
+#     def _plot_advanced_analysis(self):
+#         """Advanced analysis plots"""
+#         fig2, axes = plt.subplots(2, 2, figsize=(16, 10))
         
-        # 2.1 Moving averages
-        axes[0, 0].plot(self.df.index, self.df['Close'], label='Close', 
-                       linewidth=1.5, alpha=0.7)
-        axes[0, 0].plot(self.df.index, self.df['Close'].rolling(7).mean(), 
-                       label='MA-7', linewidth=2)
-        axes[0, 0].plot(self.df.index, self.df['Close'].rolling(30).mean(), 
-                       label='MA-30', linewidth=2)
-        axes[0, 0].plot(self.df.index, self.df['Close'].rolling(90).mean(), 
-                       label='MA-90', linewidth=2)
-        axes[0, 0].set_title('Moving Averages', fontsize=14, fontweight='bold')
-        axes[0, 0].set_ylabel('Price (USD)')
-        axes[0, 0].legend()
-        axes[0, 0].grid(True, alpha=0.3)
+#         # 2.1 Moving averages
+#         axes[0, 0].plot(self.df.index, self.df['Close'], label='Close', 
+#                        linewidth=1.5, alpha=0.7)
+#         axes[0, 0].plot(self.df.index, self.df['Close'].rolling(7).mean(), 
+#                        label='MA-7', linewidth=2)
+#         axes[0, 0].plot(self.df.index, self.df['Close'].rolling(30).mean(), 
+#                        label='MA-30', linewidth=2)
+#         axes[0, 0].plot(self.df.index, self.df['Close'].rolling(90).mean(), 
+#                        label='MA-90', linewidth=2)
+#         axes[0, 0].set_title('Moving Averages', fontsize=14, fontweight='bold')
+#         axes[0, 0].set_ylabel('Price (USD)')
+#         axes[0, 0].legend()
+#         axes[0, 0].grid(True, alpha=0.3)
         
-        # 2.2 Seasonality (Day of Week)
-        df_temp = self.df.copy()
-        df_temp['DayOfWeek'] = df_temp.index.dayofweek
-        df_temp['Returns'] = df_temp['Close'].pct_change()
-        day_returns = df_temp.groupby('DayOfWeek')['Returns'].mean() * 100
-        days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        colors = ['green' if x > 0 else 'red' for x in day_returns]
-        axes[0, 1].bar(range(7), day_returns, color=colors, alpha=0.7, edgecolor='black')
-        axes[0, 1].set_xticks(range(7))
-        axes[0, 1].set_xticklabels(days)
-        axes[0, 1].set_title('Average Returns by Day of Week', 
-                            fontsize=14, fontweight='bold')
-        axes[0, 1].set_ylabel('Average Return (%)')
-        axes[0, 1].axhline(0, color='black', linestyle='--', linewidth=1)
-        axes[0, 1].grid(True, alpha=0.3, axis='y')
+#         # 2.2 Seasonality (Day of Week)
+#         df_temp = self.df.copy()
+#         df_temp['DayOfWeek'] = df_temp.index.dayofweek
+#         df_temp['Returns'] = df_temp['Close'].pct_change()
+#         day_returns = df_temp.groupby('DayOfWeek')['Returns'].mean() * 100
+#         days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+#         colors = ['green' if x > 0 else 'red' for x in day_returns]
+#         axes[0, 1].bar(range(7), day_returns, color=colors, alpha=0.7, edgecolor='black')
+#         axes[0, 1].set_xticks(range(7))
+#         axes[0, 1].set_xticklabels(days)
+#         axes[0, 1].set_title('Average Returns by Day of Week', 
+#                             fontsize=14, fontweight='bold')
+#         axes[0, 1].set_ylabel('Average Return (%)')
+#         axes[0, 1].axhline(0, color='black', linestyle='--', linewidth=1)
+#         axes[0, 1].grid(True, alpha=0.3, axis='y')
         
-        # 2.3 Monthly seasonality
-        df_temp['Month'] = df_temp.index.month
-        month_returns = df_temp.groupby('Month')['Returns'].mean() * 100
-        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        colors = ['green' if x > 0 else 'red' for x in month_returns]
-        axes[1, 0].bar(range(1, 13), month_returns, color=colors, alpha=0.7, 
-                      edgecolor='black')
-        axes[1, 0].set_xticks(range(1, 13))
-        axes[1, 0].set_xticklabels(months, rotation=45)
-        axes[1, 0].set_title('Average Returns by Month', fontsize=14, fontweight='bold')
-        axes[1, 0].set_ylabel('Average Return (%)')
-        axes[1, 0].axhline(0, color='black', linestyle='--', linewidth=1)
-        axes[1, 0].grid(True, alpha=0.3, axis='y')
+#         # 2.3 Monthly seasonality
+#         df_temp['Month'] = df_temp.index.month
+#         month_returns = df_temp.groupby('Month')['Returns'].mean() * 100
+#         months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+#                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+#         colors = ['green' if x > 0 else 'red' for x in month_returns]
+#         axes[1, 0].bar(range(1, 13), month_returns, color=colors, alpha=0.7, 
+#                       edgecolor='black')
+#         axes[1, 0].set_xticks(range(1, 13))
+#         axes[1, 0].set_xticklabels(months, rotation=45)
+#         axes[1, 0].set_title('Average Returns by Month', fontsize=14, fontweight='bold')
+#         axes[1, 0].set_ylabel('Average Return (%)')
+#         axes[1, 0].axhline(0, color='black', linestyle='--', linewidth=1)
+#         axes[1, 0].grid(True, alpha=0.3, axis='y')
         
-        # 2.4 Cumulative returns
-        cumulative_returns = (1 + df_temp['Returns'].fillna(0)).cumprod()
-        axes[1, 1].plot(self.df.index, cumulative_returns, linewidth=2, color='#2E86AB')
-        axes[1, 1].fill_between(self.df.index, 1, cumulative_returns, alpha=0.3)
-        axes[1, 1].set_title('Cumulative Returns', fontsize=14, fontweight='bold')
-        axes[1, 1].set_ylabel('Cumulative Return')
-        axes[1, 1].set_xlabel('Date')
-        axes[1, 1].axhline(1, color='black', linestyle='--', linewidth=1)
-        axes[1, 1].grid(True, alpha=0.3)
+#         # 2.4 Cumulative returns
+#         cumulative_returns = (1 + df_temp['Returns'].fillna(0)).cumprod()
+#         axes[1, 1].plot(self.df.index, cumulative_returns, linewidth=2, color='#2E86AB')
+#         axes[1, 1].fill_between(self.df.index, 1, cumulative_returns, alpha=0.3)
+#         axes[1, 1].set_title('Cumulative Returns', fontsize=14, fontweight='bold')
+#         axes[1, 1].set_ylabel('Cumulative Return')
+#         axes[1, 1].set_xlabel('Date')
+#         axes[1, 1].axhline(1, color='black', linestyle='--', linewidth=1)
+#         axes[1, 1].grid(True, alpha=0.3)
         
-        plt.tight_layout()
-        plt.savefig('lstm/results/02_advanced_analysis.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: 02_advanced_analysis.png")
-        plt.close()
+#         plt.tight_layout()
+#         plt.savefig('lstm/results/02_advanced_analysis.png', dpi=300, bbox_inches='tight')
+#         print("   ✅ Saved: 02_advanced_analysis.png")
+#         plt.close()
         
-        print()
+#         print()
 
 
 # ============================================================================
@@ -336,9 +336,7 @@ class FeatureEngineer:
     def create_features(df, verbose=True):
         """Create comprehensive feature set"""
         if verbose:
-            print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-            print("║                     STEP 2: FEATURE ENGINEERING                               ║")
-            print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+            print_box("\nFEATURE ENGINEERING")
             print("🔧 Creating features...")
         
         df = df.copy()
@@ -429,8 +427,7 @@ class FeatureEngineer:
         
         if verbose:
             print(f"   ✅ Created {new_cols - original_cols} new features")
-            print(f"   ✅ Total features: {new_cols}")
-            print(f"   ✅ Valid samples after cleaning: {len(df)}\n")
+            print(f"   ✅ Valid samples: {len(df)}\n")
         
         return df
 
@@ -579,10 +576,8 @@ class ModelTrainer:
     
     def fit(self, train_loader, val_loader, epochs, patience=10):
         """Train the model"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                          STEP 3: MODEL TRAINING                               ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nMODEL TRAINING")
+
         train_losses = []
         val_losses = []
         patience_counter = 0
@@ -591,7 +586,7 @@ class ModelTrainer:
         print(f"   Device: {self.device}")
         print(f"   Epochs: {epochs}")
         print(f"   Early stopping patience: {patience}\n")
-        print("─" * 80)
+        print("─" * 81)
         
         for epoch in range(epochs):
             train_loss = self.train_epoch(train_loader)
@@ -622,9 +617,9 @@ class ModelTrainer:
                 print(f"\n⚠️  Early stopping triggered at epoch {epoch+1}")
                 break
         
-        print("─" * 80)
+        print("─" * 81)
         print(f"✅ Training completed!")
-        print(f"   Best validation loss: {self.best_val_loss:.6f}\n")
+        print(f"   Best validation loss: {self.best_val_loss:.6f}")
         
         self._plot_training_history(train_losses, val_losses)
         
@@ -675,9 +670,7 @@ class Evaluator:
     @staticmethod
     def evaluate(model, test_loader, device, scaler, close_idx=0):
         """Evaluate model on test set"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                         STEP 4: MODEL EVALUATION                              ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+        print_box("\nMODEL EVALUATION")
         
         model.eval()
         predictions = []
@@ -755,12 +748,12 @@ class Evaluator:
     def _print_metrics(metrics):
         """Print evaluation metrics"""
         print("📈 EVALUATION METRICS")
-        print("─" * 80)
+        print("─" * 81)
         
         # Header
         print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} "
               f"{'MAPE':>10} {'Dir_Acc':>10}")
-        print("─" * 80)
+        print("─" * 81)
         
         # Print each day
         for day, m in metrics.items():
@@ -771,7 +764,7 @@ class Evaluator:
                   f"{m['MAPE']:>9.2f}% "
                   f"{m['Direction_Accuracy']:>9.1f}%")
         
-        print("─" * 80)
+        print("─" * 81)
         
         # Average metrics
         avg_rmse = np.mean([m['RMSE'] for m in metrics.values()])
@@ -786,7 +779,7 @@ class Evaluator:
               f"{avg_r2:>9.4f} "
               f"{avg_mape:>9.2f}% "
               f"{avg_dir:>9.1f}%")
-        print("─" * 80 + "\n")
+        print("─" * 81 + "\n")
     
     @staticmethod
     def plot_predictions(predictions, actuals, dates, save_path='lstm/results/04_predictions.png'):
@@ -877,7 +870,7 @@ class Evaluator:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
 
 
@@ -894,9 +887,7 @@ class FutureForecaster:
         """
         Recursive forecasting: predict one step, use it for next prediction
         """
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                        STEP 5: FUTURE FORECASTING                             ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+        print_box("\nFUTURE FORECASTING")
         
         print(f"🔮 Generating {n_days}-day forecast...")
         
@@ -929,13 +920,13 @@ class FutureForecaster:
         
         print(f"   ✅ Forecast complete\n")
         print("📊 FORECAST SUMMARY")
-        print("─" * 80)
+        print("─" * 81)
         print(f"Next day price:    ${forecasts[0]:,.2f}")
         print(f"7-day price:       ${forecasts[6]:,.2f}")
         print(f"14-day price:      ${forecasts[13]:,.2f}")
         print(f"30-day price:      ${forecasts[-1]:,.2f}")
         print(f"Expected return:   {((forecasts[-1] / forecasts[0] - 1) * 100):.2f}%")
-        print("─" * 80 + "\n")
+        print("─" * 81 + "\n")
         
         return forecasts
     
@@ -998,7 +989,7 @@ class FutureForecaster:
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}\n")
+        print(f"   ✅ Saved: {save_path}")
         plt.close()
 
 
@@ -1039,34 +1030,26 @@ def main():
         # Data split
         'train_ratio': 0.7,
         'val_ratio': 0.15,
-        # test_ratio = 1 - train_ratio - val_ratio = 0.15
         
         # Future forecast
         'forecast_days': 30
     }
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"⚙️  Device: {device}")
-    print(f"⚙️  PyTorch version: {torch.__version__}\n")
+    print(f"⚙️  Device: {device} | PyTorch version: {torch.__version__}\n")
     
-    # ========================================
-    # LOAD DATA
-    # ========================================
+    # ETL
     df, is_real = BitcoinDataLoader.load_data(
         use_real_data=CONFIG['use_real_data'],
         start_date=CONFIG['start_date'],
         end_date=CONFIG['end_date']
     )
     
-    # ========================================
     # EDA
-    # ========================================
     eda = BitcoinEDA(df, is_real_data=is_real)
     eda.run_full_eda()
     
-    # ========================================
-    # FEATURE ENGINEERING
-    # ========================================
+    # Feature engineering
     df_features = FeatureEngineer.create_features(df, verbose=True)
     
     # Select features (exclude categorical time features)
@@ -1080,10 +1063,8 @@ def main():
     # ========================================
     # NORMALIZE & SPLIT
     # ========================================
-    print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-    print("║                       DATA PREPARATION & SPLITTING                            ║")
-    print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-    
+    print_box("\nDATA PREPARATION & SPLITTING")
+
     scaler = StandardScaler()
     scaled_data = scaler.fit_transform(df_model.values)
     
@@ -1191,12 +1172,8 @@ def main():
     # ========================================
     # SUMMARY
     # ========================================
-    print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-    print("║                           EXECUTION SUMMARY                                   ║")
-    print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-    
-    print("✅ Pipeline completed successfully!\n")
-    
+    print_box("\nEXECUTION SUMMARY")
+
     print("📁 Generated files:")
     print("   1. 01_comprehensive_eda.png - Comprehensive exploratory data analysis")
     print("   2. 02_advanced_analysis.png - Advanced statistical analysis")
@@ -1206,7 +1183,7 @@ def main():
     print("   6. 06_future_forecast.png - Future price forecast")
     print("   7. best_bitcoin_model.pth - Saved model weights")
     
-    print("\n📊 Key Results:")
+    print("\n📊 Final Results:")
     avg_r2 = np.mean([m['R2'] for m in metrics.values()])
     avg_mae = np.mean([m['MAE'] for m in metrics.values()])
     avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
@@ -1218,11 +1195,12 @@ def main():
     print(f"   Average Direction Accuracy: {avg_dir:.1f}%")
     print(f"   Current Bitcoin Price:      ${df['Close'].iloc[-1]:,.2f}")
     print(f"   30-day Forecast:            ${forecasts[-1]:,.2f}")
-    print(f"   Expected 30-day Return:     {((forecasts[-1] / df['Close'].iloc[-1] - 1) * 100):.2f}%")
-    
-    print("\n" + "=" * 80)
-    print("🎉 Thank you for using Bitcoin LSTM Forecasting System!")
-    print("=" * 80 + "\n")
+    print(f"   Expected 30-day Return:     {((forecasts[-1] / df['Close'].iloc[-1] - 1) * 100):.2f}%\n")
+
+    print("🏆 Pipeline completed successfully!\n")
+
+    print_box() # Line break
+    print(f"📈 Thank you for using Bitcoin LSTM Forecasting System!")
     
     return {
         'model': model,
@@ -1237,203 +1215,203 @@ def main():
     }
 
 
-# ============================================================================
-# ADVANCED FEATURE IMPORTANCE ANALYSIS (OPTIONAL)
-# ============================================================================
+# # ============================================================================
+# # ADVANCED FEATURE IMPORTANCE ANALYSIS (OPTIONAL)
+# # ============================================================================
 
-class FeatureImportance:
-    """Analyze feature importance using permutation method"""
+# class FeatureImportance:
+#     """Analyze feature importance using permutation method"""
     
-    @staticmethod
-    def calculate_importance(model, test_loader, device, feature_names, 
-                            n_repeats=5, max_batches=20):
-        """
-        Calculate feature importance using permutation method
+#     @staticmethod
+#     def calculate_importance(model, test_loader, device, feature_names, 
+#                             n_repeats=5, max_batches=20):
+#         """
+#         Calculate feature importance using permutation method
         
-        Note: This is computationally expensive. Using subset of data.
-        """
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                    BONUS: FEATURE IMPORTANCE ANALYSIS                         ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+#         Note: This is computationally expensive. Using subset of data.
+#         """
+#         print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+#         print("║                    BONUS: FEATURE IMPORTANCE ANALYSIS                         ║")
+#         print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
         
-        print(f"🔬 Calculating feature importance (this may take a while)...")
-        print(f"   Using {n_repeats} permutations per feature")
-        print(f"   Analyzing {max_batches} batches\n")
+#         print(f"🔬 Calculating feature importance (this may take a while)...")
+#         print(f"   Using {n_repeats} permutations per feature")
+#         print(f"   Analyzing {max_batches} batches\n")
         
-        model.eval()
-        criterion = nn.MSELoss()
+#         model.eval()
+#         criterion = nn.MSELoss()
         
-        # Calculate baseline loss
-        baseline_loss = 0
-        batch_count = 0
+#         # Calculate baseline loss
+#         baseline_loss = 0
+#         batch_count = 0
         
-        with torch.no_grad():
-            for batch_x, batch_y in test_loader:
-                if batch_count >= max_batches:
-                    break
-                batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-                output = model(batch_x)
-                baseline_loss += criterion(output, batch_y).item()
-                batch_count += 1
+#         with torch.no_grad():
+#             for batch_x, batch_y in test_loader:
+#                 if batch_count >= max_batches:
+#                     break
+#                 batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+#                 output = model(batch_x)
+#                 baseline_loss += criterion(output, batch_y).item()
+#                 batch_count += 1
         
-        baseline_loss /= batch_count
-        print(f"   Baseline loss: {baseline_loss:.6f}")
+#         baseline_loss /= batch_count
+#         print(f"   Baseline loss: {baseline_loss:.6f}")
         
-        # Calculate importance for each feature
-        importance_scores = {}
+#         # Calculate importance for each feature
+#         importance_scores = {}
         
-        for feat_idx, feat_name in enumerate(feature_names):
-            if feat_idx % 10 == 0:
-                print(f"   Processing feature {feat_idx + 1}/{len(feature_names)}...")
+#         for feat_idx, feat_name in enumerate(feature_names):
+#             if feat_idx % 10 == 0:
+#                 print(f"   Processing feature {feat_idx + 1}/{len(feature_names)}...")
             
-            losses = []
+#             losses = []
             
-            for _ in range(n_repeats):
-                perm_loss = 0
-                batch_count = 0
+#             for _ in range(n_repeats):
+#                 perm_loss = 0
+#                 batch_count = 0
                 
-                with torch.no_grad():
-                    for batch_x, batch_y in test_loader:
-                        if batch_count >= max_batches:
-                            break
+#                 with torch.no_grad():
+#                     for batch_x, batch_y in test_loader:
+#                         if batch_count >= max_batches:
+#                             break
                         
-                        batch_x = batch_x.clone()
+#                         batch_x = batch_x.clone()
                         
-                        # Permute feature
-                        perm_idx = torch.randperm(batch_x.size(0))
-                        batch_x[:, :, feat_idx] = batch_x[perm_idx, :, feat_idx]
+#                         # Permute feature
+#                         perm_idx = torch.randperm(batch_x.size(0))
+#                         batch_x[:, :, feat_idx] = batch_x[perm_idx, :, feat_idx]
                         
-                        batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-                        output = model(batch_x)
-                        perm_loss += criterion(output, batch_y).item()
-                        batch_count += 1
+#                         batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+#                         output = model(batch_x)
+#                         perm_loss += criterion(output, batch_y).item()
+#                         batch_count += 1
                 
-                losses.append(perm_loss / batch_count)
+#                 losses.append(perm_loss / batch_count)
             
-            # Importance = increase in loss
-            importance_scores[feat_name] = np.mean(losses) - baseline_loss
+#             # Importance = increase in loss
+#             importance_scores[feat_name] = np.mean(losses) - baseline_loss
         
-        print("   ✅ Feature importance calculated\n")
+#         print("   ✅ Feature importance calculated\n")
         
-        # Sort and display
-        sorted_importance = sorted(importance_scores.items(), 
-                                  key=lambda x: abs(x[1]), reverse=True)
+#         # Sort and display
+#         sorted_importance = sorted(importance_scores.items(), 
+#                                   key=lambda x: abs(x[1]), reverse=True)
         
-        print("📊 TOP 20 MOST IMPORTANT FEATURES")
-        print("─" * 80)
-        print(f"{'Rank':<6} {'Feature':<30} {'Importance Score':>20}")
-        print("─" * 80)
+#         print("📊 TOP 20 MOST IMPORTANT FEATURES")
+#         print("─" * 81)
+#         print(f"{'Rank':<6} {'Feature':<30} {'Importance Score':>20}")
+#         print("─" * 81)
         
-        for rank, (feat, score) in enumerate(sorted_importance[:20], 1):
-            print(f"{rank:<6} {feat:<30} {score:>20.6f}")
+#         for rank, (feat, score) in enumerate(sorted_importance[:20], 1):
+#             print(f"{rank:<6} {feat:<30} {score:>20.6f}")
         
-        print("─" * 80 + "\n")
+#         print("─" * 81 + "\n")
         
-        # Visualize
-        FeatureImportance._plot_importance(sorted_importance[:20])
+#         # Visualize
+#         FeatureImportance._plot_importance(sorted_importance[:20])
         
-        return importance_scores
+#         return importance_scores
     
-    @staticmethod
-    def _plot_importance(top_features):
-        """Plot feature importance"""
-        features, scores = zip(*top_features)
+#     @staticmethod
+#     def _plot_importance(top_features):
+#         """Plot feature importance"""
+#         features, scores = zip(*top_features)
         
-        fig, ax = plt.subplots(figsize=(12, 10))
+#         fig, ax = plt.subplots(figsize=(12, 10))
         
-        colors = ['#2E86AB' if s > 0 else '#C73E1D' for s in scores]
-        y_pos = np.arange(len(features))
+#         colors = ['#2E86AB' if s > 0 else '#C73E1D' for s in scores]
+#         y_pos = np.arange(len(features))
         
-        ax.barh(y_pos, scores, color=colors, alpha=0.7, edgecolor='black')
-        ax.set_yticks(y_pos)
-        ax.set_yticklabels(features, fontsize=10)
-        ax.set_xlabel('Importance Score (Increase in MSE)', fontsize=12)
-        ax.set_title('Top 20 Feature Importance', fontsize=14, fontweight='bold', pad=20)
-        ax.axvline(0, color='black', linestyle='--', linewidth=1)
-        ax.grid(True, alpha=0.3, axis='x')
+#         ax.barh(y_pos, scores, color=colors, alpha=0.7, edgecolor='black')
+#         ax.set_yticks(y_pos)
+#         ax.set_yticklabels(features, fontsize=10)
+#         ax.set_xlabel('Importance Score (Increase in MSE)', fontsize=12)
+#         ax.set_title('Top 20 Feature Importance', fontsize=14, fontweight='bold', pad=20)
+#         ax.axvline(0, color='black', linestyle='--', linewidth=1)
+#         ax.grid(True, alpha=0.3, axis='x')
         
-        plt.tight_layout()
-        plt.savefig('lstm/results/07_feature_importance.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: 07_feature_importance.png\n")
-        plt.close()
+#         plt.tight_layout()
+#         plt.savefig('lstm/results/07_feature_importance.png', dpi=300, bbox_inches='tight')
+#         print("   ✅ Saved: 07_feature_importance.png\n")
+#         plt.close()
 
 
-# ============================================================================
-# RISK ANALYSIS
-# ============================================================================
+# # ============================================================================
+# # RISK ANALYSIS
+# # ============================================================================
 
-class RiskAnalyzer:
-    """Analyze investment risk based on forecasts"""
+# class RiskAnalyzer:
+#     """Analyze investment risk based on forecasts"""
     
-    @staticmethod
-    def analyze_risk(forecasts, current_price, historical_returns):
-        """Calculate risk metrics"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                        BONUS: RISK ANALYSIS                                   ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+#     @staticmethod
+#     def analyze_risk(forecasts, current_price, historical_returns):
+#         """Calculate risk metrics"""
+#         print("╔═══════════════════════════════════════════════════════════════════════════════╗")
+#         print("║                        BONUS: RISK ANALYSIS                                   ║")
+#         print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
         
-        # Calculate metrics
-        expected_return = (forecasts[-1] / current_price - 1) * 100
-        forecast_returns = np.diff(forecasts) / forecasts[:-1]
-        forecast_volatility = np.std(forecast_returns) * np.sqrt(365) * 100
+#         # Calculate metrics
+#         expected_return = (forecasts[-1] / current_price - 1) * 100
+#         forecast_returns = np.diff(forecasts) / forecasts[:-1]
+#         forecast_volatility = np.std(forecast_returns) * np.sqrt(365) * 100
         
-        historical_vol = np.std(historical_returns) * np.sqrt(365) * 100
+#         historical_vol = np.std(historical_returns) * np.sqrt(365) * 100
         
-        # Value at Risk (VaR) - 95% confidence
-        var_95 = np.percentile(historical_returns, 5) * current_price
+#         # Value at Risk (VaR) - 95% confidence
+#         var_95 = np.percentile(historical_returns, 5) * current_price
         
-        # Maximum drawdown in forecast
-        cumulative = np.cumprod(1 + forecast_returns)
-        running_max = np.maximum.accumulate(cumulative)
-        drawdown = (cumulative - running_max) / running_max
-        max_drawdown = np.min(drawdown) * 100
+#         # Maximum drawdown in forecast
+#         cumulative = np.cumprod(1 + forecast_returns)
+#         running_max = np.maximum.accumulate(cumulative)
+#         drawdown = (cumulative - running_max) / running_max
+#         max_drawdown = np.min(drawdown) * 100
         
-        # Sharpe ratio (assuming risk-free rate = 0)
-        sharpe = expected_return / forecast_volatility if forecast_volatility > 0 else 0
+#         # Sharpe ratio (assuming risk-free rate = 0)
+#         sharpe = expected_return / forecast_volatility if forecast_volatility > 0 else 0
         
-        print("📊 RISK METRICS")
-        print("─" * 80)
-        print(f"Expected 30-Day Return:        {expected_return:>10.2f}%")
-        print(f"Forecast Volatility (Annual):  {forecast_volatility:>10.2f}%")
-        print(f"Historical Volatility:         {historical_vol:>10.2f}%")
-        print(f"Value at Risk (95%, 1-day):    ${var_95:>10,.2f}")
-        print(f"Maximum Forecast Drawdown:     {max_drawdown:>10.2f}%")
-        print(f"Sharpe Ratio (Rf=0):           {sharpe:>10.2f}")
-        print("─" * 80)
+#         print("📊 RISK METRICS")
+#         print("─" * 81)
+#         print(f"Expected 30-Day Return:        {expected_return:>10.2f}%")
+#         print(f"Forecast Volatility (Annual):  {forecast_volatility:>10.2f}%")
+#         print(f"Historical Volatility:         {historical_vol:>10.2f}%")
+#         print(f"Value at Risk (95%, 1-day):    ${var_95:>10,.2f}")
+#         print(f"Maximum Forecast Drawdown:     {max_drawdown:>10.2f}%")
+#         print(f"Sharpe Ratio (Rf=0):           {sharpe:>10.2f}")
+#         print("─" * 81)
         
-        # Risk assessment
-        print("\n🎯 RISK ASSESSMENT")
-        print("─" * 80)
+#         # Risk assessment
+#         print("\n🎯 RISK ASSESSMENT")
+#         print("─" * 81)
         
-        if forecast_volatility > historical_vol * 1.2:
-            print("⚠️  WARNING: Forecast shows higher volatility than historical")
-        elif forecast_volatility < historical_vol * 0.8:
-            print("✅ Forecast shows lower volatility than historical")
-        else:
-            print("ℹ️  Forecast volatility is consistent with historical patterns")
+#         if forecast_volatility > historical_vol * 1.2:
+#             print("⚠️  WARNING: Forecast shows higher volatility than historical")
+#         elif forecast_volatility < historical_vol * 0.8:
+#             print("✅ Forecast shows lower volatility than historical")
+#         else:
+#             print("ℹ️  Forecast volatility is consistent with historical patterns")
         
-        if abs(max_drawdown) > 15:
-            print(f"⚠️  WARNING: Significant drawdown expected ({max_drawdown:.1f}%)")
-        else:
-            print(f"✅ Moderate drawdown risk ({max_drawdown:.1f}%)")
+#         if abs(max_drawdown) > 15:
+#             print(f"⚠️  WARNING: Significant drawdown expected ({max_drawdown:.1f}%)")
+#         else:
+#             print(f"✅ Moderate drawdown risk ({max_drawdown:.1f}%)")
         
-        if sharpe > 1.0:
-            print(f"✅ Favorable risk-adjusted returns (Sharpe: {sharpe:.2f})")
-        elif sharpe > 0:
-            print(f"ℹ️  Moderate risk-adjusted returns (Sharpe: {sharpe:.2f})")
-        else:
-            print(f"⚠️  Poor risk-adjusted returns (Sharpe: {sharpe:.2f})")
+#         if sharpe > 1.0:
+#             print(f"✅ Favorable risk-adjusted returns (Sharpe: {sharpe:.2f})")
+#         elif sharpe > 0:
+#             print(f"ℹ️  Moderate risk-adjusted returns (Sharpe: {sharpe:.2f})")
+#         else:
+#             print(f"⚠️  Poor risk-adjusted returns (Sharpe: {sharpe:.2f})")
         
-        print("─" * 80 + "\n")
+#         print("─" * 81 + "\n")
         
-        return {
-            'expected_return': expected_return,
-            'forecast_volatility': forecast_volatility,
-            'historical_volatility': historical_vol,
-            'var_95': var_95,
-            'max_drawdown': max_drawdown,
-            'sharpe_ratio': sharpe
-        }
+#         return {
+#             'expected_return': expected_return,
+#             'forecast_volatility': forecast_volatility,
+#             'historical_volatility': historical_vol,
+#             'var_95': var_95,
+#             'max_drawdown': max_drawdown,
+#             'sharpe_ratio': sharpe
+#         }
 
 
 # ============================================================================
@@ -1449,48 +1427,46 @@ if __name__ == "__main__":
     try:
         results = main()
         
-        # Optional: Feature importance analysis
-        print("\n" + "=" * 80)
-        response = input("Would you like to perform feature importance analysis? (y/n): ")
-        if response.lower() == 'y':
-            # Use a subset of test data for feature importance
-            test_subset = results['test_data'][:min(200, len(results['test_data']))]
-            test_subset_dataset = TimeSeriesDataset(
-                test_subset,
-                results['config']['seq_len'],
-                results['config']['pred_len']
-            )
-            test_subset_loader = DataLoader(
-                test_subset_dataset,
-                batch_size=32,
-                shuffle=False
-            )
+        # # Optional: Feature importance analysis
+        # print_box() # Line break
+        # response = input("Would you like to perform feature importance analysis? (y/n): ")
+        # if response.lower() == 'y':
+        #     # Use a subset of test data for feature importance
+        #     test_subset = results['test_data'][:min(200, len(results['test_data']))]
+        #     test_subset_dataset = TimeSeriesDataset(
+        #         test_subset,
+        #         results['config']['seq_len'],
+        #         results['config']['pred_len']
+        #     )
+        #     test_subset_loader = DataLoader(
+        #         test_subset_dataset,
+        #         batch_size=32,
+        #         shuffle=False
+        #     )
             
-            importance_scores = FeatureImportance.calculate_importance(
-                results['model'],
-                test_subset_loader,
-                torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-                results['feature_cols'],
-                n_repeats=5,
-                max_batches=10
-            )
+        #     importance_scores = FeatureImportance.calculate_importance(
+        #         results['model'],
+        #         test_subset_loader,
+        #         torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+        #         results['feature_cols'],
+        #         n_repeats=5,
+        #         max_batches=10
+        #     )
         
-        # Optional: Risk analysis
-        print("\n" + "=" * 80)
-        response = input("Would you like to perform risk analysis? (y/n): ")
-        if response.lower() == 'y':
-            # Get historical returns
-            historical_returns = np.diff(results['actuals'][:, 0]) / results['actuals'][:-1, 0]
+        # # Optional: Risk analysis
+        # print_box() # Line break
+        # response = input("Would you like to perform risk analysis? (y/n): ")
+        # if response.lower() == 'y':
+        #     # Get historical returns
+        #     historical_returns = np.diff(results['actuals'][:, 0]) / results['actuals'][:-1, 0]
             
-            risk_metrics = RiskAnalyzer.analyze_risk(
-                results['forecasts'],
-                results['actuals'][-1, 0],  # Last actual price
-                historical_returns
-            )
+        #     risk_metrics = RiskAnalyzer.analyze_risk(
+        #         results['forecasts'],
+        #         results['actuals'][-1, 0],  # Last actual price
+        #         historical_returns
+        #     )
         
-        print("\n" + "╔" + "═" * 78 + "╗")
-        print("║" + " " * 20 + "ALL ANALYSES COMPLETED SUCCESSFULLY!" + " " * 22 + "║")
-        print("╚" + "═" * 78 + "╝\n")
+        # print_box("\nALL ANALYSES COMPLETED SUCCESSFULLY!")
         
     except KeyboardInterrupt:
         print("\n\n⚠️  Execution interrupted by user")
