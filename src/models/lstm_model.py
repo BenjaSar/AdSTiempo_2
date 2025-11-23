@@ -187,7 +187,7 @@ class ModelTrainer:
             # Early stopping check
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'lstm/best_bitcoin_model.pth')
+                torch.save(self.model.state_dict(), 'lstm/best_lstm_model.pth')
                 patience_counter = 0
                 status = "✅ (saved)"
             else:

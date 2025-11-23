@@ -225,7 +225,7 @@ class TransformerTrainer:
             # Early stopping check
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'transformer/best_bitcoin_model.pth')
+                torch.save(self.model.state_dict(), 'transformer/best_transformer_model.pth')
                 patience_counter = 0
                 status = "✅ (saved)"
             else:
@@ -764,7 +764,7 @@ class FutureForecaster:
 #     # ========================================
 #     # LOAD BEST MODEL & EVALUATE
 #     # ========================================
-#     model.load_state_dict(torch.load('transformer/best_bitcoin_model.pth'))
+#     model.load_state_dict(torch.load('transformer/best_transformer_model.pth'))
     
 #     close_idx = feature_cols.index('Close')
 #     predictions, actuals, metrics = Evaluator.evaluate(
@@ -821,7 +821,7 @@ class FutureForecaster:
 #     print("   4. 04_predictions.png - Test set predictions")
 #     print("   5. 05_error_analysis.png - Prediction error analysis")
 #     print("   6. 06_future_forecast.png - Future price forecast")
-#     print("   7. best_bitcoin_model.pth - Saved model weights")
+#     print("   7. best_transformer_model.pth - Saved model weights")
     
 #     print("\n📊 Key Results:")
 #     avg_r2 = np.mean([m['R2'] for m in metrics.values()])

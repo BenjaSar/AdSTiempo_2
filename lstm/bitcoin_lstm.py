@@ -300,7 +300,7 @@ def main():
     # ========================================
     # LOAD BEST MODEL & EVALUATE
     # ========================================
-    model.load_state_dict(torch.load('lstm/best_bitcoin_model.pth'))
+    model.load_state_dict(torch.load('lstm/best_lstm_model.pth'))
     
     close_idx = feature_cols.index('Close')
     predictions, actuals, metrics = Evaluator.evaluate(
@@ -353,7 +353,7 @@ def main():
     print("   4. 04_predictions.png - Test set predictions")
     print("   5. 05_error_analysis.png - Prediction error analysis")
     print("   6. 06_future_forecast.png - Future price forecast")
-    print("   7. best_bitcoin_model.pth - Saved model weights")
+    print("   7. best_lstm_model.pth - Saved model weights")
     
     print("\n📊 Final Results:")
     avg_r2 = np.mean([m['R2'] for m in metrics.values()])
