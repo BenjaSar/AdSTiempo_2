@@ -28,7 +28,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import from ETL module
-from utils.etl import BitcoinDataLoader, BitcoinEDA
+from src.etl import BitcoinDataLoader, BitcoinEDA
 
 # Import Informer architecture
 from src.models.lstm_model import (

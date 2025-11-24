@@ -31,7 +31,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import from ETL module
-from utils.etl import BitcoinDataLoader
+from src.etl import BitcoinDataLoader
 
 # Import Informer architecture
 from src.models.informer_model import Informer

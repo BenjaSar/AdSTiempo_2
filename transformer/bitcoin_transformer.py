@@ -32,7 +32,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import from ETL module
-from utils.etl import BitcoinDataLoader, BitcoinEDA
+from src.etl import BitcoinDataLoader, BitcoinEDA
 
 # Import Transformer architecture
 from src.models.transformer_model import (
