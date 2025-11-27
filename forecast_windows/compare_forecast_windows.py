@@ -10,10 +10,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_absolute_error, r2_score
+
 import os
 import sys
 from pathlib import Path
@@ -29,11 +27,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__)) # Get the directory of 
 project_root = os.path.join(current_dir, '..') # Get the path to the project root (the directory above the current one)
 sys.path.append(project_root) # Add the project root to Python's search path
 
-# Import necessary classes from main script
-from transformer.bitcoin_transformer import (
-    BitcoinDataLoader, FeatureEngineer, TimeSeriesDataset, 
-    TimeSeriesTransformer, TransformerTrainer, Evaluator
-)
 
 ventanas = None
 

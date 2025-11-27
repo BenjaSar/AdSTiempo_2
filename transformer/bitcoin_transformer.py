@@ -15,18 +15,15 @@ python bitcoin_transformer.py
 """
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import os
 import warnings
 warnings.filterwarnings('ignore')
+
+# Deep learning libraries
+import torch
+from torch.utils.data import DataLoader
+from sklearn.preprocessing import MinMaxScaler
 
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -35,13 +32,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from src.etl import (
     BitcoinDataLoader,
     ImprovedFeatureEngineer,
+    ReturnsDataset,
     BitcoinEDA
 )
 
 # Import Transformer architecture
 from src.models.transformer_model import (
     Transformer,
-    ReturnsDataset,
     ImprovedTrainer,
     ImprovedEvaluator,
     FeatureImportance, 
@@ -236,7 +233,7 @@ def main():
     print("🏆 Pipeline completed successfully!\n")
 
     print_box() # Line break
-    print("📈 Thank you for using Bitcoin LSTM Forecasting System!")
+    print("📈 Thank you for using Bitcoin Forecasting System!")
     
     # return {
     #     'model': model,

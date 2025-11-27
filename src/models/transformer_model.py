@@ -10,18 +10,16 @@ python bitcoin_transformer_production.py
 """
 
 import numpy as np
-# import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-# from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
+# Deep learning libraries
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset #, DataLoader
-# from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from torch.utils.data import Dataset
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Import formatting utility
@@ -597,35 +595,35 @@ class FutureForecaster:
         plt.close()
 
 
-# ============================================================================
-# IMPROVED DATASET WITH RETURNS
-# ============================================================================
+# # ============================================================================
+# # IMPROVED DATASET WITH RETURNS
+# # ============================================================================
 
-class ReturnsDataset(Dataset):
-    """Dataset for returns-based forecasting"""
+# class ReturnsDataset(Dataset):
+#     """Dataset for returns-based forecasting"""
     
-    def __init__(self, features, prices, seq_len, pred_len):
-        self.features = features
-        self.prices = prices
-        self.seq_len = seq_len
-        self.pred_len = pred_len
+#     def __init__(self, features, prices, seq_len, pred_len):
+#         self.features = features
+#         self.prices = prices
+#         self.seq_len = seq_len
+#         self.pred_len = pred_len
         
-    def __len__(self):
-        return len(self.features) - self.seq_len - self.pred_len + 1
+#     def __len__(self):
+#         return len(self.features) - self.seq_len - self.pred_len + 1
     
-    def __getitem__(self, idx):
-        # Input: feature sequence
-        x = self.features[idx:idx + self.seq_len]
+#     def __getitem__(self, idx):
+#         # Input: feature sequence
+#         x = self.features[idx:idx + self.seq_len]
         
-        # Target: future returns (first feature column)
-        y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
+#         # Target: future returns (first feature column)
+#         y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
         
-        # Also return last price for reconstruction
-        last_price = self.prices[idx + self.seq_len - 1]
+#         # Also return last price for reconstruction
+#         last_price = self.prices[idx + self.seq_len - 1]
         
-        return (torch.FloatTensor(x), 
-                torch.FloatTensor(y),
-                torch.FloatTensor([last_price]))
+#         return (torch.FloatTensor(x), 
+#                 torch.FloatTensor(y),
+#                 torch.FloatTensor([last_price]))
 
 # ============================================================================
 # IMPROVED TRAINER WITH HUBER LOSS

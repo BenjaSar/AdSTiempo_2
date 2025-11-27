@@ -10,16 +10,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
+# Deep learning libraries
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from torch.utils.data import Dataset
 
 # Try to import yfinance for real data
 try:
@@ -174,9 +170,9 @@ class BitcoinEDA:
         
         # Check for missing values
         if not self.df.isnull().sum().sum():
-            print("No missing values detected.")
+            print("\nNo missing values detected.")
         else:
-            print(f"Missing Values:\n{self.df.isnull().sum()}")
+            print(f"\nMissing Values:\n{self.df.isnull().sum()}")
         
         print(f"\nPrice Statistics:")
         print(f"  Current Price: ${self.df['Close'].iloc[-1]:,.2f}")

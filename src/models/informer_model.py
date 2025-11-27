@@ -18,23 +18,20 @@ Usage:
 python bitcoin_informer.py
 """
 
+import math
 import numpy as np
-# import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-# from datetime import datetime, timedelta
-# import os
 import warnings
 warnings.filterwarnings('ignore')
 
+# Deep learning libraries
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import Dataset #, DataLoader
-# from sklearn.preprocessing import StandardScaler
+from torch.utils.data import Dataset
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import math
 
 # Import formatting utility
 from utils.misc import print_box
