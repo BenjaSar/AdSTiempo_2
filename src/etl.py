@@ -168,8 +168,15 @@ class BitcoinEDA:
         print(f"Dataset Shape: {self.df.shape[0]} days × {self.df.shape[1]} features")
         print(f"Date Range: {self.df.index.min().date()} to {self.df.index.max().date()}")
         print(f"Trading Days: {len(self.df)}")
-        print(f"Data Type: {'Real (Yahoo Finance)' if self.is_real_data else 'Synthetic'}")
-        print(f"\nMissing Values:\n{self.df.isnull().sum()}")
+        print(f"Data Type: {'Real (Yahoo Finance)' if self.is_real_data else 'Synthetic'}\n")
+        print(f"Statistical Summary:")
+        print(self.df[['Open', 'High', 'Low', 'Close', 'Volume']].describe())
+        
+        # Check for missing values
+        if not self.df.isnull().sum().sum():
+            print("No missing values detected.")
+        else:
+            print(f"Missing Values:\n{self.df.isnull().sum()}")
         
         print(f"\nPrice Statistics:")
         print(f"  Current Price: ${self.df['Close'].iloc[-1]:,.2f}")

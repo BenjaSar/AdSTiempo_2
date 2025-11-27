@@ -20,26 +20,6 @@ warnings.filterwarnings('ignore')
 from utils.misc import print_box
 
 # ============================================================================
-# PYTORCH DATASET
-# ============================================================================
-
-class TimeSeriesDataset(Dataset):
-    """PyTorch Dataset for time series"""
-    
-    def __init__(self, data, seq_len, pred_len):
-        self.data = data
-        self.seq_len = seq_len
-        self.pred_len = pred_len
-        
-    def __len__(self):
-        return len(self.data) - self.seq_len - self.pred_len + 1
-    
-    def __getitem__(self, idx):
-        x = self.data[idx:idx + self.seq_len]
-        y = self.data[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]  # Close price
-        return torch.FloatTensor(x), torch.FloatTensor(y)
-
-# ============================================================================
 # LSTM MODEL
 # ============================================================================
 
@@ -133,8 +113,8 @@ class ModelTrainer:
     def train_epoch(self, train_loader):
         self.model.train()
         total_loss = 0
-        
-        for batch_x, batch_y in train_loader:
+
+        for batch_x, batch_y, _ in train_loader:
             batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
             
             self.optimizer.zero_grad()
@@ -153,7 +133,7 @@ class ModelTrainer:
         total_loss = 0
         
         with torch.no_grad():
-            for batch_x, batch_y in val_loader:
+            for batch_x, batch_y, _ in val_loader:
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
                 output = self.model(batch_x)
                 loss = self.criterion(output, batch_y)
@@ -266,7 +246,7 @@ class Evaluator:
         print("📊 Generating predictions on test set...")
         
         with torch.no_grad():
-            for batch_x, batch_y in test_loader:
+            for batch_x, batch_y, _ in test_loader:
                 batch_x = batch_x.to(device)
                 output = model(batch_x)
                 predictions.append(output.cpu().numpy())
@@ -610,7 +590,7 @@ class FeatureImportance:
         batch_count = 0
         
         with torch.no_grad():
-            for batch_x, batch_y in test_loader:
+            for batch_x, batch_y, _ in test_loader:
                 if batch_count >= max_batches:
                     break
                 batch_x, batch_y = batch_x.to(device), batch_y.to(device)
@@ -635,7 +615,7 @@ class FeatureImportance:
                 batch_count = 0
                 
                 with torch.no_grad():
-                    for batch_x, batch_y in test_loader:
+                    for batch_x, batch_y, _ in test_loader:
                         if batch_count >= max_batches:
                             break
                         

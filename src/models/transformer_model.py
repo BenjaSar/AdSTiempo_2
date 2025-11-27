@@ -10,18 +10,18 @@ python bitcoin_transformer_production.py
 """
 
 import numpy as np
-import pandas as pd
+# import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from torch.utils.data import Dataset #, DataLoader
+# from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Import formatting utility
@@ -34,26 +34,6 @@ sns.set_palette("husl")
 # Set random seeds
 torch.manual_seed(42)
 np.random.seed(42)
-
-# ============================================================================
-# PYTORCH DATASET
-# ============================================================================
-
-class TimeSeriesDataset(Dataset):
-    """PyTorch Dataset for time series"""
-    
-    def __init__(self, data, seq_len, pred_len):
-        self.data = data
-        self.seq_len = seq_len
-        self.pred_len = pred_len
-        
-    def __len__(self):
-        return len(self.data) - self.seq_len - self.pred_len + 1
-    
-    def __getitem__(self, idx):
-        x = self.data[idx:idx + self.seq_len]
-        y = self.data[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]  # Close price
-        return torch.FloatTensor(x), torch.FloatTensor(y)
 
 # ============================================================================
 # TRANSFORMER ARCHITECTURE COMPONENTS
@@ -83,7 +63,7 @@ class PositionalEncoding(nn.Module):
 # TRANSFORMER MODEL
 # ============================================================================
 
-class TimeSeriesTransformer(nn.Module):
+class Transformer(nn.Module):
     """Transformer model for time series forecasting"""
     
     def __init__(self, input_dim, d_model, nhead, num_layers, 
@@ -150,353 +130,353 @@ class TimeSeriesTransformer(nn.Module):
         return output
 
 
-# ============================================================================
-# TRAINER
-# ============================================================================
+# # ============================================================================
+# # TRAINER
+# # ============================================================================
 
-class TransformerTrainer:
-    """Training pipeline"""
+# class TransformerTrainer:
+#     """Training pipeline"""
     
-    def __init__(self, model, device, learning_rate=0.001, weight_decay=1e-5):
-        self.model = model.to(device)
-        self.device = device
-        self.criterion = nn.MSELoss()
-        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
-                                     weight_decay=weight_decay)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.5, patience=5
-        )
-        self.best_val_loss = float('inf')
+#     def __init__(self, model, device, learning_rate=0.001, weight_decay=1e-5):
+#         self.model = model.to(device)
+#         self.device = device
+#         self.criterion = nn.MSELoss()
+#         self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
+#                                      weight_decay=weight_decay)
+#         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+#             self.optimizer, mode='min', factor=0.5, patience=5
+#         )
+#         self.best_val_loss = float('inf')
         
-    def train_epoch(self, train_loader):
-        self.model.train()
-        total_loss = 0
+#     def train_epoch(self, train_loader):
+#         self.model.train()
+#         total_loss = 0
         
-        for batch_x, batch_y in train_loader:
-            batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+#         for batch_x, batch_y in train_loader:
+#             batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
             
-            self.optimizer.zero_grad()
-            output = self.model(batch_x)
-            loss = self.criterion(output, batch_y)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-            self.optimizer.step()
+#             self.optimizer.zero_grad()
+#             output = self.model(batch_x)
+#             loss = self.criterion(output, batch_y)
+#             loss.backward()
+#             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+#             self.optimizer.step()
             
-            total_loss += loss.item()
+#             total_loss += loss.item()
             
-        return total_loss / len(train_loader)
+#         return total_loss / len(train_loader)
     
-    def validate(self, val_loader):
-        self.model.eval()
-        total_loss = 0
+#     def validate(self, val_loader):
+#         self.model.eval()
+#         total_loss = 0
         
-        with torch.no_grad():
-            for batch_x, batch_y in val_loader:
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                output = self.model(batch_x)
-                loss = self.criterion(output, batch_y)
-                total_loss += loss.item()
+#         with torch.no_grad():
+#             for batch_x, batch_y in val_loader:
+#                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+#                 output = self.model(batch_x)
+#                 loss = self.criterion(output, batch_y)
+#                 total_loss += loss.item()
                 
-        return total_loss / len(val_loader)
+#         return total_loss / len(val_loader)
     
-    def fit(self, train_loader, val_loader, epochs, patience=10):
-        """Train the model"""
-        print_box("\nMODEL TRAINING")
+#     def fit(self, train_loader, val_loader, epochs, patience=10):
+#         """Train the model"""
+#         print_box("\nMODEL TRAINING")
 
-        train_losses = []
-        val_losses = []
-        patience_counter = 0
+#         train_losses = []
+#         val_losses = []
+#         patience_counter = 0
         
-        print(f"🚀 Training started with {sum(p.numel() for p in self.model.parameters()):,} parameters")
-        print(f"   Device: {self.device}")
-        print(f"   Epochs: {epochs}")
-        print(f"   Early stopping patience: {patience}\n")
-        print("─" * 80)
+#         print(f"🚀 Training started with {sum(p.numel() for p in self.model.parameters()):,} parameters")
+#         print(f"   Device: {self.device}")
+#         print(f"   Epochs: {epochs}")
+#         print(f"   Early stopping patience: {patience}\n")
+#         print("─" * 80)
         
-        for epoch in range(epochs):
-            train_loss = self.train_epoch(train_loader)
-            val_loss = self.validate(val_loader)
+#         for epoch in range(epochs):
+#             train_loss = self.train_epoch(train_loader)
+#             val_loss = self.validate(val_loader)
             
-            train_losses.append(train_loss)
-            val_losses.append(val_loss)
+#             train_losses.append(train_loss)
+#             val_losses.append(val_loss)
             
-            self.scheduler.step(val_loss)
+#             self.scheduler.step(val_loss)
             
-            # Early stopping check
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'transformer/best_transformer_model.pth')
-                patience_counter = 0
-                status = "✅ (saved)"
-            else:
-                patience_counter += 1
-                status = f"⏳ (patience: {patience_counter}/{patience})"
+#             # Early stopping check
+#             if val_loss < self.best_val_loss:
+#                 self.best_val_loss = val_loss
+#                 torch.save(self.model.state_dict(), 'transformer/best_transformer_model.pth')
+#                 patience_counter = 0
+#                 status = "✅ (saved)"
+#             else:
+#                 patience_counter += 1
+#                 status = f"⏳ (patience: {patience_counter}/{patience})"
             
-            if (epoch + 1) % 5 == 0 or epoch == 0:
-                print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
-                      f"Train Loss: {train_loss:.6f} │ "
-                      f"Val Loss: {val_loss:.6f} │ {status}")
+#             if (epoch + 1) % 5 == 0 or epoch == 0:
+#                 print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
+#                       f"Train Loss: {train_loss:.6f} │ "
+#                       f"Val Loss: {val_loss:.6f} │ {status}")
             
-            # Early stopping
-            if patience_counter >= patience:
-                print(f"\n⚠️  Early stopping triggered at epoch {epoch+1}")
-                break
+#             # Early stopping
+#             if patience_counter >= patience:
+#                 print(f"\n⚠️  Early stopping triggered at epoch {epoch+1}")
+#                 break
         
-        print("─" * 80)
-        print(f"✅ Training completed!")
-        print(f"   Best validation loss: {self.best_val_loss:.6f}\n")
+#         print("─" * 80)
+#         print(f"✅ Training completed!")
+#         print(f"   Best validation loss: {self.best_val_loss:.6f}\n")
         
-        self._plot_training_history(train_losses, val_losses)
+#         self._plot_training_history(train_losses, val_losses)
         
-        return train_losses, val_losses
+#         return train_losses, val_losses
     
-    def _plot_training_history(self, train_losses, val_losses):
-        """Plot training history"""
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+#     def _plot_training_history(self, train_losses, val_losses):
+#         """Plot training history"""
+#         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
         
-        epochs = range(1, len(train_losses) + 1)
+#         epochs = range(1, len(train_losses) + 1)
         
-        # Loss curves
-        ax1.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
-                markersize=4, alpha=0.7)
-        ax1.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
-                markersize=4, alpha=0.7)
-        ax1.set_xlabel('Epoch', fontsize=12)
-        ax1.set_ylabel('Loss (MSE)', fontsize=12)
-        ax1.set_title('Training History', fontsize=14, fontweight='bold')
-        ax1.legend(fontsize=11)
-        ax1.grid(True, alpha=0.3)
+#         # Loss curves
+#         ax1.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
+#                 markersize=4, alpha=0.7)
+#         ax1.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
+#                 markersize=4, alpha=0.7)
+#         ax1.set_xlabel('Epoch', fontsize=12)
+#         ax1.set_ylabel('Loss (MSE)', fontsize=12)
+#         ax1.set_title('Training History', fontsize=14, fontweight='bold')
+#         ax1.legend(fontsize=11)
+#         ax1.grid(True, alpha=0.3)
         
-        # Log scale
-        ax2.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
-                markersize=4, alpha=0.7)
-        ax2.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
-                markersize=4, alpha=0.7)
-        ax2.set_xlabel('Epoch', fontsize=12)
-        ax2.set_ylabel('Loss (MSE, log scale)', fontsize=12)
-        ax2.set_title('Training History (Log Scale)', fontsize=14, fontweight='bold')
-        ax2.set_yscale('log')
-        ax2.legend(fontsize=11)
-        ax2.grid(True, alpha=0.3)
+#         # Log scale
+#         ax2.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
+#                 markersize=4, alpha=0.7)
+#         ax2.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
+#                 markersize=4, alpha=0.7)
+#         ax2.set_xlabel('Epoch', fontsize=12)
+#         ax2.set_ylabel('Loss (MSE, log scale)', fontsize=12)
+#         ax2.set_title('Training History (Log Scale)', fontsize=14, fontweight='bold')
+#         ax2.set_yscale('log')
+#         ax2.legend(fontsize=11)
+#         ax2.grid(True, alpha=0.3)
         
-        plt.tight_layout()
-        plt.savefig('transformer/results/03_training_history.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: 03_training_history.png\n")
-        plt.close()
+#         plt.tight_layout()
+#         plt.savefig('transformer/results/03_training_history.png', dpi=300, bbox_inches='tight')
+#         print("   ✅ Saved: 03_training_history.png\n")
+#         plt.close()
 
 
-# ============================================================================
-# EVALUATION & FORECASTING
-# ============================================================================
+# # ============================================================================
+# # EVALUATION & FORECASTING
+# # ============================================================================
 
-class Evaluator:
-    """Model evaluation and prediction"""
+# class Evaluator:
+#     """Model evaluation and prediction"""
     
-    @staticmethod
-    def evaluate(model, test_loader, device, scaler, close_idx=0):
-        """Evaluate model on test set"""
-        print_box("\nMODEL EVALUATION")
+#     @staticmethod
+#     def evaluate(model, test_loader, device, scaler, close_idx=0):
+#         """Evaluate model on test set"""
+#         print_box("\nMODEL EVALUATION")
         
-        model.eval()
-        predictions = []
-        actuals = []
+#         model.eval()
+#         predictions = []
+#         actuals = []
         
-        print("📊 Generating predictions on test set...")
+#         print("📊 Generating predictions on test set...")
         
-        with torch.no_grad():
-            for batch_x, batch_y in test_loader:
-                batch_x = batch_x.to(device)
-                output = model(batch_x)
-                predictions.append(output.cpu().numpy())
-                actuals.append(batch_y.numpy())
+#         with torch.no_grad():
+#             for batch_x, batch_y in test_loader:
+#                 batch_x = batch_x.to(device)
+#                 output = model(batch_x)
+#                 predictions.append(output.cpu().numpy())
+#                 actuals.append(batch_y.numpy())
         
-        predictions = np.concatenate(predictions, axis=0)
-        actuals = np.concatenate(actuals, axis=0)
+#         predictions = np.concatenate(predictions, axis=0)
+#         actuals = np.concatenate(actuals, axis=0)
         
-        # Inverse transform
-        pred_len = predictions.shape[1]
-        n_features = scaler.n_features_in_
+#         # Inverse transform
+#         pred_len = predictions.shape[1]
+#         n_features = scaler.n_features_in_
         
-        pred_rescaled = np.zeros_like(predictions)
-        actual_rescaled = np.zeros_like(actuals)
+#         pred_rescaled = np.zeros_like(predictions)
+#         actual_rescaled = np.zeros_like(actuals)
         
-        for i in range(pred_len):
-            # Create dummy array with all features
-            pred_full = np.zeros((predictions.shape[0], n_features))
-            actual_full = np.zeros((actuals.shape[0], n_features))
+#         for i in range(pred_len):
+#             # Create dummy array with all features
+#             pred_full = np.zeros((predictions.shape[0], n_features))
+#             actual_full = np.zeros((actuals.shape[0], n_features))
             
-            pred_full[:, close_idx] = predictions[:, i]
-            actual_full[:, close_idx] = actuals[:, i]
+#             pred_full[:, close_idx] = predictions[:, i]
+#             actual_full[:, close_idx] = actuals[:, i]
             
-            pred_rescaled[:, i] = scaler.inverse_transform(pred_full)[:, close_idx]
-            actual_rescaled[:, i] = scaler.inverse_transform(actual_full)[:, close_idx]
+#             pred_rescaled[:, i] = scaler.inverse_transform(pred_full)[:, close_idx]
+#             actual_rescaled[:, i] = scaler.inverse_transform(actual_full)[:, close_idx]
         
-        print("   ✅ Predictions generated\n")
+#         print("   ✅ Predictions generated\n")
         
-        # Calculate metrics
-        metrics = Evaluator._calculate_metrics(pred_rescaled, actual_rescaled)
-        Evaluator._print_metrics(metrics)
+#         # Calculate metrics
+#         metrics = Evaluator._calculate_metrics(pred_rescaled, actual_rescaled)
+#         Evaluator._print_metrics(metrics)
         
-        return pred_rescaled, actual_rescaled, metrics
+#         return pred_rescaled, actual_rescaled, metrics
     
-    @staticmethod
-    def _calculate_metrics(predictions, actuals):
-        """Calculate evaluation metrics"""
-        metrics = {}
-        pred_len = predictions.shape[1]
+#     @staticmethod
+#     def _calculate_metrics(predictions, actuals):
+#         """Calculate evaluation metrics"""
+#         metrics = {}
+#         pred_len = predictions.shape[1]
         
-        for i in range(pred_len):
-            pred = predictions[:, i]
-            actual = actuals[:, i]
+#         for i in range(pred_len):
+#             pred = predictions[:, i]
+#             actual = actuals[:, i]
             
-            rmse = np.sqrt(mean_squared_error(actual, pred))
-            mae = mean_absolute_error(actual, pred)
-            r2 = r2_score(actual, pred)
-            mape = np.mean(np.abs((actual - pred) / actual)) * 100
+#             rmse = np.sqrt(mean_squared_error(actual, pred))
+#             mae = mean_absolute_error(actual, pred)
+#             r2 = r2_score(actual, pred)
+#             mape = np.mean(np.abs((actual - pred) / actual)) * 100
             
-            # Directional accuracy
-            actual_direction = np.sign(np.diff(np.concatenate([[actual[0]], actual])))
-            pred_direction = np.sign(np.diff(np.concatenate([[pred[0]], pred])))
-            direction_accuracy = np.mean(actual_direction == pred_direction) * 100
+#             # Directional accuracy
+#             actual_direction = np.sign(np.diff(np.concatenate([[actual[0]], actual])))
+#             pred_direction = np.sign(np.diff(np.concatenate([[pred[0]], pred])))
+#             direction_accuracy = np.mean(actual_direction == pred_direction) * 100
             
-            metrics[f'Day_{i+1}'] = {
-                'RMSE': rmse,
-                'MAE': mae,
-                'R2': r2,
-                'MAPE': mape,
-                'Direction_Accuracy': direction_accuracy
-            }
+#             metrics[f'Day_{i+1}'] = {
+#                 'RMSE': rmse,
+#                 'MAE': mae,
+#                 'R2': r2,
+#                 'MAPE': mape,
+#                 'Direction_Accuracy': direction_accuracy
+#             }
         
-        return metrics
+#         return metrics
     
-    @staticmethod
-    def _print_metrics(metrics):
-        """Print evaluation metrics"""
-        print("📈 EVALUATION METRICS")
-        print("─" * 80)
+#     @staticmethod
+#     def _print_metrics(metrics):
+#         """Print evaluation metrics"""
+#         print("📈 EVALUATION METRICS")
+#         print("─" * 80)
         
-        # Header
-        print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} "
-              f"{'MAPE':>10} {'Dir_Acc':>10}")
-        print("─" * 80)
+#         # Header
+#         print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} "
+#               f"{'MAPE':>10} {'Dir_Acc':>10}")
+#         print("─" * 80)
         
-        # Print each day
-        for day, m in metrics.items():
-            print(f"{day:<12} "
-                  f"${m['RMSE']:>9,.2f} "
-                  f"${m['MAE']:>9,.2f} "
-                  f"{m['R2']:>9.4f} "
-                  f"{m['MAPE']:>9.2f}% "
-                  f"{m['Direction_Accuracy']:>9.1f}%")
+#         # Print each day
+#         for day, m in metrics.items():
+#             print(f"{day:<12} "
+#                   f"${m['RMSE']:>9,.2f} "
+#                   f"${m['MAE']:>9,.2f} "
+#                   f"{m['R2']:>9.4f} "
+#                   f"{m['MAPE']:>9.2f}% "
+#                   f"{m['Direction_Accuracy']:>9.1f}%")
         
-        print("─" * 80)
+#         print("─" * 80)
         
-        # Average metrics
-        avg_rmse = np.mean([m['RMSE'] for m in metrics.values()])
-        avg_mae = np.mean([m['MAE'] for m in metrics.values()])
-        avg_r2 = np.mean([m['R2'] for m in metrics.values()])
-        avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
-        avg_dir = np.mean([m['Direction_Accuracy'] for m in metrics.values()])
+#         # Average metrics
+#         avg_rmse = np.mean([m['RMSE'] for m in metrics.values()])
+#         avg_mae = np.mean([m['MAE'] for m in metrics.values()])
+#         avg_r2 = np.mean([m['R2'] for m in metrics.values()])
+#         avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
+#         avg_dir = np.mean([m['Direction_Accuracy'] for m in metrics.values()])
         
-        print(f"{'AVERAGE':<12} "
-              f"${avg_rmse:>9,.2f} "
-              f"${avg_mae:>9,.2f} "
-              f"{avg_r2:>9.4f} "
-              f"{avg_mape:>9.2f}% "
-              f"{avg_dir:>9.1f}%")
-        print("─" * 80 + "\n")
+#         print(f"{'AVERAGE':<12} "
+#               f"${avg_rmse:>9,.2f} "
+#               f"${avg_mae:>9,.2f} "
+#               f"{avg_r2:>9.4f} "
+#               f"{avg_mape:>9.2f}% "
+#               f"{avg_dir:>9.1f}%")
+#         print("─" * 80 + "\n")
     
-    @staticmethod
-    def plot_predictions(predictions, actuals, dates, save_path='transformer/results/04_predictions.png'):
-        """Visualize predictions"""
-        pred_len = predictions.shape[1]
-        n_plots = min(pred_len, 4)
+#     @staticmethod
+#     def plot_predictions(predictions, actuals, dates, save_path='transformer/results/04_predictions.png'):
+#         """Visualize predictions"""
+#         pred_len = predictions.shape[1]
+#         n_plots = min(pred_len, 4)
         
-        fig, axes = plt.subplots(2, 2, figsize=(18, 12))
-        axes = axes.flatten()
+#         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+#         axes = axes.flatten()
         
-        for i in range(n_plots):
-            ax = axes[i]
+#         for i in range(n_plots):
+#             ax = axes[i]
             
-            # Plot actual and predicted
-            ax.plot(dates, actuals[:, i], label='Actual', linewidth=2, 
-                   alpha=0.8, color='#2E86AB')
-            ax.plot(dates, predictions[:, i], label='Predicted', linewidth=2, 
-                   alpha=0.8, color='#F18F01', linestyle='--')
+#             # Plot actual and predicted
+#             ax.plot(dates, actuals[:, i], label='Actual', linewidth=2, 
+#                    alpha=0.8, color='#2E86AB')
+#             ax.plot(dates, predictions[:, i], label='Predicted', linewidth=2, 
+#                    alpha=0.8, color='#F18F01', linestyle='--')
             
-            # Calculate metrics for title
-            r2 = r2_score(actuals[:, i], predictions[:, i])
-            mae = mean_absolute_error(actuals[:, i], predictions[:, i])
+#             # Calculate metrics for title
+#             r2 = r2_score(actuals[:, i], predictions[:, i])
+#             mae = mean_absolute_error(actuals[:, i], predictions[:, i])
             
-            ax.set_title(f'Day {i+1} Forecast (R²={r2:.3f}, MAE=${mae:,.0f})', 
-                        fontsize=13, fontweight='bold')
-            ax.set_xlabel('Date', fontsize=11)
-            ax.set_ylabel('Bitcoin Price (USD)', fontsize=11)
-            ax.legend(fontsize=10)
-            ax.grid(True, alpha=0.3)
-            ax.yaxis.set_major_formatter(plt.FuncFormatter(
-                lambda x, p: f'${x:,.0f}'))
+#             ax.set_title(f'Day {i+1} Forecast (R²={r2:.3f}, MAE=${mae:,.0f})', 
+#                         fontsize=13, fontweight='bold')
+#             ax.set_xlabel('Date', fontsize=11)
+#             ax.set_ylabel('Bitcoin Price (USD)', fontsize=11)
+#             ax.legend(fontsize=10)
+#             ax.grid(True, alpha=0.3)
+#             ax.yaxis.set_major_formatter(plt.FuncFormatter(
+#                 lambda x, p: f'${x:,.0f}'))
             
-        plt.tight_layout()
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}")
-        plt.close()
+#         plt.tight_layout()
+#         plt.savefig(save_path, dpi=300, bbox_inches='tight')
+#         print(f"   ✅ Saved: {save_path}")
+#         plt.close()
     
-    @staticmethod
-    def plot_error_analysis(predictions, actuals, dates, save_path='transformer/results/05_error_analysis.png'):
-        """Analyze prediction errors"""
-        fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+#     @staticmethod
+#     def plot_error_analysis(predictions, actuals, dates, save_path='transformer/results/05_error_analysis.png'):
+#         """Analyze prediction errors"""
+#         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
-        # Use first-day predictions for detailed analysis
-        pred = predictions[:, 0]
-        actual = actuals[:, 0]
-        errors = pred - actual
-        pct_errors = (errors / actual) * 100
+#         # Use first-day predictions for detailed analysis
+#         pred = predictions[:, 0]
+#         actual = actuals[:, 0]
+#         errors = pred - actual
+#         pct_errors = (errors / actual) * 100
         
-        # 1. Scatter plot: Predicted vs Actual
-        axes[0, 0].scatter(actual, pred, alpha=0.5, s=30)
-        min_val, max_val = min(actual.min(), pred.min()), max(actual.max(), pred.max())
-        axes[0, 0].plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2)
-        axes[0, 0].set_xlabel('Actual Price (USD)', fontsize=11)
-        axes[0, 0].set_ylabel('Predicted Price (USD)', fontsize=11)
-        axes[0, 0].set_title('Predicted vs Actual (Day 1)', fontsize=13, fontweight='bold')
-        axes[0, 0].grid(True, alpha=0.3)
+#         # 1. Scatter plot: Predicted vs Actual
+#         axes[0, 0].scatter(actual, pred, alpha=0.5, s=30)
+#         min_val, max_val = min(actual.min(), pred.min()), max(actual.max(), pred.max())
+#         axes[0, 0].plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2)
+#         axes[0, 0].set_xlabel('Actual Price (USD)', fontsize=11)
+#         axes[0, 0].set_ylabel('Predicted Price (USD)', fontsize=11)
+#         axes[0, 0].set_title('Predicted vs Actual (Day 1)', fontsize=13, fontweight='bold')
+#         axes[0, 0].grid(True, alpha=0.3)
         
-        # 2. Error distribution
-        axes[0, 1].hist(errors, bins=50, color='#C73E1D', alpha=0.7, edgecolor='black')
-        axes[0, 1].axvline(0, color='black', linestyle='--', linewidth=2)
-        axes[0, 1].axvline(errors.mean(), color='red', linestyle='--', linewidth=2, 
-                          label=f'Mean: ${errors.mean():,.0f}')
-        axes[0, 1].set_xlabel('Prediction Error (USD)', fontsize=11)
-        axes[0, 1].set_ylabel('Frequency', fontsize=11)
-        axes[0, 1].set_title('Error Distribution', fontsize=13, fontweight='bold')
-        axes[0, 1].legend()
-        axes[0, 1].grid(True, alpha=0.3, axis='y')
+#         # 2. Error distribution
+#         axes[0, 1].hist(errors, bins=50, color='#C73E1D', alpha=0.7, edgecolor='black')
+#         axes[0, 1].axvline(0, color='black', linestyle='--', linewidth=2)
+#         axes[0, 1].axvline(errors.mean(), color='red', linestyle='--', linewidth=2, 
+#                           label=f'Mean: ${errors.mean():,.0f}')
+#         axes[0, 1].set_xlabel('Prediction Error (USD)', fontsize=11)
+#         axes[0, 1].set_ylabel('Frequency', fontsize=11)
+#         axes[0, 1].set_title('Error Distribution', fontsize=13, fontweight='bold')
+#         axes[0, 1].legend()
+#         axes[0, 1].grid(True, alpha=0.3, axis='y')
         
-        # 3. Errors over time
-        axes[1, 0].plot(dates, errors, linewidth=1, alpha=0.7, color='#C73E1D')
-        axes[1, 0].axhline(0, color='black', linestyle='--', linewidth=1)
-        axes[1, 0].fill_between(dates, 0, errors, alpha=0.3, color='#C73E1D')
-        axes[1, 0].set_xlabel('Date', fontsize=11)
-        axes[1, 0].set_ylabel('Prediction Error (USD)', fontsize=11)
-        axes[1, 0].set_title('Errors Over Time', fontsize=13, fontweight='bold')
-        axes[1, 0].grid(True, alpha=0.3)
+#         # 3. Errors over time
+#         axes[1, 0].plot(dates, errors, linewidth=1, alpha=0.7, color='#C73E1D')
+#         axes[1, 0].axhline(0, color='black', linestyle='--', linewidth=1)
+#         axes[1, 0].fill_between(dates, 0, errors, alpha=0.3, color='#C73E1D')
+#         axes[1, 0].set_xlabel('Date', fontsize=11)
+#         axes[1, 0].set_ylabel('Prediction Error (USD)', fontsize=11)
+#         axes[1, 0].set_title('Errors Over Time', fontsize=13, fontweight='bold')
+#         axes[1, 0].grid(True, alpha=0.3)
         
-        # 4. Percentage error distribution
-        axes[1, 1].hist(pct_errors, bins=50, color='#A23B72', alpha=0.7, edgecolor='black')
-        axes[1, 1].axvline(0, color='black', linestyle='--', linewidth=2)
-        axes[1, 1].axvline(pct_errors.mean(), color='red', linestyle='--', linewidth=2,
-                          label=f'Mean: {pct_errors.mean():.2f}%')
-        axes[1, 1].set_xlabel('Percentage Error (%)', fontsize=11)
-        axes[1, 1].set_ylabel('Frequency', fontsize=11)
-        axes[1, 1].set_title('Percentage Error Distribution', fontsize=13, fontweight='bold')
-        axes[1, 1].legend()
-        axes[1, 1].grid(True, alpha=0.3, axis='y')
+#         # 4. Percentage error distribution
+#         axes[1, 1].hist(pct_errors, bins=50, color='#A23B72', alpha=0.7, edgecolor='black')
+#         axes[1, 1].axvline(0, color='black', linestyle='--', linewidth=2)
+#         axes[1, 1].axvline(pct_errors.mean(), color='red', linestyle='--', linewidth=2,
+#                           label=f'Mean: {pct_errors.mean():.2f}%')
+#         axes[1, 1].set_xlabel('Percentage Error (%)', fontsize=11)
+#         axes[1, 1].set_ylabel('Frequency', fontsize=11)
+#         axes[1, 1].set_title('Percentage Error Distribution', fontsize=13, fontweight='bold')
+#         axes[1, 1].legend()
+#         axes[1, 1].grid(True, alpha=0.3, axis='y')
         
-        plt.tight_layout()
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}")
-        plt.close()
+#         plt.tight_layout()
+#         plt.savefig(save_path, dpi=300, bbox_inches='tight')
+#         print(f"   ✅ Saved: {save_path}")
+#         plt.close()
 
 
 # ============================================================================
@@ -618,241 +598,402 @@ class FutureForecaster:
 
 
 # ============================================================================
-# MAIN EXECUTION
+# IMPROVED DATASET WITH RETURNS
 # ============================================================================
 
-# def main():
-#     """Main execution pipeline"""
+class ReturnsDataset(Dataset):
+    """Dataset for returns-based forecasting"""
     
-#     # ========================================
-#     # CONFIGURATION
-#     # ========================================
-#     CONFIG = {
-#         # Data parameters
-#         'use_real_data': True,
-#         'start_date': '2020-01-01',
-#         'end_date': None,  # None = today
+    def __init__(self, features, prices, seq_len, pred_len):
+        self.features = features
+        self.prices = prices
+        self.seq_len = seq_len
+        self.pred_len = pred_len
         
-#         # Model parameters
-#         'seq_len': 60,          # Lookback window
-#         'pred_len': 45,         # Forecast horizon
-#         'd_model': 128,         # Model dimension
-#         'nhead': 8,             # Number of attention heads
-#         'num_layers': 3,        # Number of transformer layers
-#         'dim_feedforward': 512, # Feedforward dimension
-#         'dropout': 0.1,         # Dropout rate
+    def __len__(self):
+        return len(self.features) - self.seq_len - self.pred_len + 1
+    
+    def __getitem__(self, idx):
+        # Input: feature sequence
+        x = self.features[idx:idx + self.seq_len]
         
-#         # Training parameters
-#         'batch_size': 32,
-#         'epochs': 100,
-#         'learning_rate': 0.001,
-#         'weight_decay': 1e-5,
-#         'patience': 15,
+        # Target: future returns (first feature column)
+        y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
         
-#         # Data split
-#         'train_ratio': 0.7,
-#         'val_ratio': 0.15,
-#         # test_ratio = 1 - train_ratio - val_ratio = 0.15
+        # Also return last price for reconstruction
+        last_price = self.prices[idx + self.seq_len - 1]
         
-#         # Future forecast
-#         'forecast_days': 30
-#     }
-    
-#     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#     print(f"⚙️  Device: {device}")
-#     print(f"⚙️  PyTorch version: {torch.__version__}\n")
-    
-#     # ========================================
-#     # LOAD DATA
-#     # ========================================
-#     df, is_real = BitcoinDataLoader.load_data(
-#         use_real_data=CONFIG['use_real_data'],
-#         start_date=CONFIG['start_date'],
-#         end_date=CONFIG['end_date']
-#     )
-    
-#     # ========================================
-#     # EDA
-#     # ========================================
-#     eda = BitcoinEDA(df, is_real_data=is_real)
-#     eda.run_full_eda()
-    
-#     # ========================================
-#     # FEATURE ENGINEERING
-#     # ========================================
-#     df_features = FeatureEngineer.create_features(df, verbose=True)
-    
-#     # Select features (exclude categorical time features)
-#     exclude_cols = ['DayOfWeek', 'Month', 'Quarter', 'DayOfMonth', 
-#                    'DayOfYear', 'WeekOfYear']
-#     feature_cols = [col for col in df_features.columns if col not in exclude_cols]
-#     df_model = df_features[feature_cols].copy()
-    
-#     print(f"📊 Selected {len(feature_cols)} features for modeling\n")
-    
-#     # ========================================
-#     # NORMALIZE & SPLIT
-#     # ========================================
-#     print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-#     print("║                       DATA PREPARATION & SPLITTING                            ║")
-#     print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-    
-#     scaler = StandardScaler()
-#     scaled_data = scaler.fit_transform(df_model.values)
-    
-#     # Split data
-#     n = len(scaled_data)
-#     train_size = int(n * CONFIG['train_ratio'])
-#     val_size = int(n * CONFIG['val_ratio'])
-    
-#     train_data = scaled_data[:train_size]
-#     val_data = scaled_data[train_size:train_size + val_size]
-#     test_data = scaled_data[train_size + val_size:]
-    
-#     print(f"📊 Data split:")
-#     print(f"   Training set:   {len(train_data)} samples ({CONFIG['train_ratio']*100:.0f}%)")
-#     print(f"   Validation set: {len(val_data)} samples ({CONFIG['val_ratio']*100:.0f}%)")
-#     print(f"   Test set:       {len(test_data)} samples ({(1-CONFIG['train_ratio']-CONFIG['val_ratio'])*100:.0f}%)")
-#     print(f"   Total:          {n} samples\n")
-    
-#     # Create datasets
-#     train_dataset = TimeSeriesDataset(train_data, CONFIG['seq_len'], CONFIG['pred_len'])
-#     val_dataset = TimeSeriesDataset(val_data, CONFIG['seq_len'], CONFIG['pred_len'])
-#     test_dataset = TimeSeriesDataset(test_data, CONFIG['seq_len'], CONFIG['pred_len'])
-    
-#     train_loader = DataLoader(train_dataset, batch_size=CONFIG['batch_size'], shuffle=True)
-#     val_loader = DataLoader(val_dataset, batch_size=CONFIG['batch_size'], shuffle=False)
-#     test_loader = DataLoader(test_dataset, batch_size=CONFIG['batch_size'], shuffle=False)
-    
-#     # ========================================
-#     # BUILD MODEL
-#     # ========================================
-#     model = TimeSeriesTransformer(
-#         input_dim=len(feature_cols),
-#         d_model=CONFIG['d_model'],
-#         nhead=CONFIG['nhead'],
-#         num_layers=CONFIG['num_layers'],
-#         dim_feedforward=CONFIG['dim_feedforward'],
-#         pred_len=CONFIG['pred_len'],
-#         dropout=CONFIG['dropout']
-#     )
-    
-#     print(f"🧠 Model architecture:")
-#     print(f"   Input dimension:     {len(feature_cols)}")
-#     print(f"   Model dimension:     {CONFIG['d_model']}")
-#     print(f"   Attention heads:     {CONFIG['nhead']}")
-#     print(f"   Transformer layers:  {CONFIG['num_layers']}")
-#     print(f"   Feedforward dim:     {CONFIG['dim_feedforward']}")
-#     print(f"   Output dimension:    {CONFIG['pred_len']}")
-#     print(f"   Total parameters:    {sum(p.numel() for p in model.parameters()):,}\n")
-    
-#     # ========================================
-#     # TRAIN MODEL
-#     # ========================================
-#     trainer = TransformerTrainer(
-#         model, device, 
-#         learning_rate=CONFIG['learning_rate'],
-#         weight_decay=CONFIG['weight_decay']
-#     )
-    
-#     train_losses, val_losses = trainer.fit(
-#         train_loader, val_loader, 
-#         epochs=CONFIG['epochs'],
-#         patience=CONFIG['patience']
-#     )
-    
-#     # ========================================
-#     # LOAD BEST MODEL & EVALUATE
-#     # ========================================
-#     model.load_state_dict(torch.load('transformer/best_transformer_model.pth'))
-    
-#     close_idx = feature_cols.index('Close')
-#     predictions, actuals, metrics = Evaluator.evaluate(
-#         model, test_loader, device, scaler, close_idx
-#     )
-    
-#     # Get test dates
-#     test_start_idx = train_size + val_size + CONFIG['seq_len']
-#     test_dates = df_features.index[test_start_idx:test_start_idx + len(predictions)]
-    
-#     # Plot predictions
-#     Evaluator.plot_predictions(predictions, actuals, test_dates)
-#     Evaluator.plot_error_analysis(predictions, actuals, test_dates)
-    
-#     # ========================================
-#     # FUTURE FORECASTING
-#     # ========================================
-#     last_sequence = test_data[-CONFIG['seq_len']:]
-    
-#     forecasts = FutureForecaster.forecast_recursive(
-#         model, last_sequence, scaler, close_idx, 
-#         n_days=CONFIG['forecast_days'], device=device
-#     )
-    
-#     # Prepare visualization data
-#     historical_prices = df_model['Close'].values[-200:]
-#     historical_dates = df_features.index[-200:]
-    
-#     last_date = df_features.index[-1]
-#     forecast_dates = pd.date_range(
-#         start=last_date + pd.Timedelta(days=1),
-#         periods=CONFIG['forecast_days'],
-#         freq='D'
-#     )
-    
-#     FutureForecaster.plot_forecast(
-#         historical_prices, historical_dates,
-#         forecasts, forecast_dates
-#     )
-    
-#     # ========================================
-#     # SUMMARY
-#     # ========================================
-#     print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-#     print("║                           EXECUTION SUMMARY                                   ║")
-#     print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-    
-#     print("✅ Pipeline completed successfully!\n")
-    
-#     print("📁 Generated files:")
-#     print("   1. 01_comprehensive_eda.png - Comprehensive exploratory data analysis")
-#     print("   2. 02_advanced_analysis.png - Advanced statistical analysis")
-#     print("   3. 03_training_history.png - Model training progress")
-#     print("   4. 04_predictions.png - Test set predictions")
-#     print("   5. 05_error_analysis.png - Prediction error analysis")
-#     print("   6. 06_future_forecast.png - Future price forecast")
-#     print("   7. best_transformer_model.pth - Saved model weights")
-    
-#     print("\n📊 Key Results:")
-#     avg_r2 = np.mean([m['R2'] for m in metrics.values()])
-#     avg_mae = np.mean([m['MAE'] for m in metrics.values()])
-#     avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
-#     avg_dir = np.mean([m['Direction_Accuracy'] for m in metrics.values()])
-    
-#     print(f"   Average R² Score:           {avg_r2:.4f}")
-#     print(f"   Average MAE:                ${avg_mae:,.2f}")
-#     print(f"   Average MAPE:               {avg_mape:.2f}%")
-#     print(f"   Average Direction Accuracy: {avg_dir:.1f}%")
-#     print(f"   Current Bitcoin Price:      ${df['Close'].iloc[-1]:,.2f}")
-#     print(f"   30-day Forecast:            ${forecasts[-1]:,.2f}")
-#     print(f"   Expected 30-day Return:     {((forecasts[-1] / df['Close'].iloc[-1] - 1) * 100):.2f}%")
-    
-#     print("\n" + "=" * 80)
-#     print("📈 Thank you for using Bitcoin Transformer Forecasting System!")
-#     print("=" * 80 + "\n")
-    
-#     return {
-#         'model': model,
-#         'scaler': scaler,
-#         'predictions': predictions,
-#         'actuals': actuals,
-#         'metrics': metrics,
-#         'forecasts': forecasts,
-#         'config': CONFIG,
-#         'feature_cols': feature_cols,
-#         'test_data': test_data
-#     }
+        return (torch.FloatTensor(x), 
+                torch.FloatTensor(y),
+                torch.FloatTensor([last_price]))
 
+# ============================================================================
+# IMPROVED TRAINER WITH HUBER LOSS
+# ============================================================================
+
+class ImprovedTrainer:
+    """Enhanced training with Huber loss and better scheduling"""
+    
+    def __init__(self, model, device, learning_rate=0.001, warmup_epochs=5):
+        self.model = model.to(device)
+        self.device = device
+        self.criterion = nn.HuberLoss(delta=1.0)  # More robust than MSE
+        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
+                                     weight_decay=1e-5)
+        
+        # Learning rate scheduler with warmup
+        self.warmup_epochs = warmup_epochs
+        self.base_lr = learning_rate
+        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=50, eta_min=learning_rate/10
+        )
+        self.best_val_loss = float('inf')
+        self.epoch = 0
+        
+    def _adjust_learning_rate(self):
+        """Warmup learning rate for first few epochs"""
+        if self.epoch < self.warmup_epochs:
+            lr = self.base_lr * (self.epoch + 1) / self.warmup_epochs
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = lr
+    
+    def train_epoch(self, train_loader):
+        self.model.train()
+        total_loss = 0
+        
+        for batch_x, batch_y, _ in train_loader:
+            batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+            
+            self.optimizer.zero_grad()
+            output = self.model(batch_x)
+            loss = self.criterion(output, batch_y)
+            loss.backward()
+            
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            
+            self.optimizer.step()
+            total_loss += loss.item()
+            
+        return total_loss / len(train_loader)
+    
+    def validate(self, val_loader):
+        self.model.eval()
+        total_loss = 0
+        
+        with torch.no_grad():
+            for batch_x, batch_y, _ in val_loader:
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                output = self.model(batch_x)
+                loss = self.criterion(output, batch_y)
+                total_loss += loss.item()
+                
+        return total_loss / len(val_loader)
+    
+    def fit(self, train_loader, val_loader, epochs, patience=15):
+        """Train with warmup and cosine annealing"""
+        print_box("\nTRAINING (IMPROVED)")
+
+        print(f"🚀 Training with Huber loss and learning rate scheduling")
+        print(f"   Device: {self.device}")
+        print(f"   Warmup epochs: {self.warmup_epochs}")
+        print(f"   Total epochs: {epochs}\n")
+        print("─" * 81)
+        
+        train_losses, val_losses = [], []
+        patience_counter = 0
+        
+        for epoch in range(epochs):
+            self.epoch = epoch
+            self._adjust_learning_rate()
+            
+            train_loss = self.train_epoch(train_loader)
+            val_loss = self.validate(val_loader)
+            
+            train_losses.append(train_loss)
+            val_losses.append(val_loss)
+            
+            if epoch >= self.warmup_epochs:
+                self.scheduler.step()
+            
+            current_lr = self.optimizer.param_groups[0]['lr']
+            
+            if val_loss < self.best_val_loss:
+                self.best_val_loss = val_loss
+                torch.save(self.model.state_dict(), 'transformer/best_transformer_model.pth')
+                patience_counter = 0
+                status = "✅"
+            else:
+                patience_counter += 1
+                status = f"⏳ ({patience_counter}/{patience})"
+            
+            if (epoch + 1) % 5 == 0 or epoch == 0:
+                print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
+                      f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} │ "
+                      f"LR: {current_lr:.2e} │ {status}")
+            
+            if patience_counter >= patience:
+                print(f"\n⚠️  Early stopping at epoch {epoch+1}")
+                break
+        
+        print("─" * 81)
+        print(f"✅ Training completed!")
+        print(f"   Best validation loss: {self.best_val_loss:.6f}")
+        
+        return train_losses, val_losses
+
+
+# ============================================================================
+# IMPROVED EVALUATION
+# ============================================================================
+
+class ImprovedEvaluator:
+    """Evaluation with price reconstruction from returns"""
+    
+    @staticmethod
+    def evaluate(model, test_loader, device, scaler):
+        """Evaluate and reconstruct prices from returns"""
+        print_box("\nEVALUATION (IMPROVED)")
+
+        model.eval()
+        pred_returns, actual_returns, last_prices = [], [], []
+        
+        with torch.no_grad():
+            for batch_x, batch_y, batch_last_price in test_loader:
+                batch_x = batch_x.to(device)
+                output = model(batch_x)
+                
+                pred_returns.append(output.cpu().numpy())
+                actual_returns.append(batch_y.numpy())
+                last_prices.append(batch_last_price.numpy())
+        
+        pred_returns = np.concatenate(pred_returns, axis=0)
+        actual_returns = np.concatenate(actual_returns, axis=0)
+        last_prices = np.concatenate(last_prices, axis=0)
+        
+        # Denormalize returns
+        pred_returns_denorm = scaler.inverse_transform(pred_returns)
+        actual_returns_denorm = scaler.inverse_transform(actual_returns)
+        
+        # Reconstruct prices from returns
+        pred_prices = ImprovedEvaluator._reconstruct_prices(
+            pred_returns_denorm, last_prices
+        )
+        actual_prices = ImprovedEvaluator._reconstruct_prices(
+            actual_returns_denorm, last_prices
+        )
+        
+        # Calculate metrics
+        metrics = ImprovedEvaluator._calculate_metrics(pred_prices, actual_prices)
+        ImprovedEvaluator._print_metrics(metrics)
+        
+        return pred_prices, actual_prices, metrics
+    
+    @staticmethod
+    def _reconstruct_prices(returns, last_prices):
+        """Reconstruct prices from log returns"""
+        prices = np.zeros_like(returns)
+        
+        for i in range(len(returns)):
+            current_price = last_prices[i, 0]
+            for j in range(returns.shape[1]):
+                # P_t = P_{t-1} * exp(r_t)
+                current_price = current_price * np.exp(returns[i, j])
+                prices[i, j] = current_price
+        
+        return prices
+    
+    @staticmethod
+    def _calculate_metrics(predictions, actuals):
+        """Calculate metrics per forecast day"""
+        metrics = {}
+        pred_len = predictions.shape[1]
+        
+        for i in range(pred_len):
+            pred = predictions[:, i]
+            actual = actuals[:, i]
+            
+            rmse = np.sqrt(mean_squared_error(actual, pred))
+            mae = mean_absolute_error(actual, pred)
+            r2 = r2_score(actual, pred)
+            mape = np.mean(np.abs((actual - pred) / actual)) * 100
+            
+            # Directional accuracy
+            actual_dir = np.sign(np.diff(np.concatenate([[actual[0]], actual])))
+            pred_dir = np.sign(np.diff(np.concatenate([[pred[0]], pred])))
+            dir_acc = np.mean(actual_dir == pred_dir) * 100
+            
+            metrics[f'Day_{i+1}'] = {
+                'RMSE': rmse,
+                'MAE': mae,
+                'R2': r2,
+                'MAPE': mape,
+                'Dir_Acc': dir_acc
+            }
+        
+        return metrics
+    
+    @staticmethod
+    def _print_metrics(metrics):
+        """Print evaluation metrics"""
+        print("📈 EVALUATION METRICS (Price Reconstruction)")
+        print("─" * 81)
+        print(f"{'Forecast':<12} {'RMSE':>10} {'MAE':>10} {'R²':>10} "
+              f"{'MAPE':>10} {'Dir%':>10}")
+        print("─" * 81)
+        
+        for day, m in metrics.items():
+            print(f"{day:<12} "
+                  f"${m['RMSE']:>9,.2f} "
+                  f"${m['MAE']:>9,.2f} "
+                  f"{m['R2']:>9.4f} "
+                  f"{m['MAPE']:>9.2f}% "
+                  f"{m['Dir_Acc']:>9.1f}%")
+        
+        print("─" * 81)
+        
+        # Averages
+        avg_rmse = np.mean([m['RMSE'] for m in metrics.values()])
+        avg_mae = np.mean([m['MAE'] for m in metrics.values()])
+        avg_r2 = np.mean([m['R2'] for m in metrics.values()])
+        avg_mape = np.mean([m['MAPE'] for m in metrics.values()])
+        avg_dir = np.mean([m['Dir_Acc'] for m in metrics.values()])
+        
+        print(f"{'AVERAGE':<12} "
+              f"${avg_rmse:>9,.2f} "
+              f"${avg_mae:>9,.2f} "
+              f"{avg_r2:>9.4f} "
+              f"{avg_mape:>9.2f}% "
+              f"{avg_dir:>9.1f}%")
+        print("─" * 81 + "\n")
+    
+    @staticmethod
+    def plot_predictions(predictions, actuals, save_path='transformer/results/03_predictions.png'):
+        """Plot price predictions"""
+        pred_len = min(predictions.shape[1], 4)
+        
+        fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+        axes = axes.flatten()
+        
+        for i in range(pred_len):
+            ax = axes[i]
+            
+            x = np.arange(len(predictions))
+            ax.plot(x, actuals[:, i], label='Actual', linewidth=2, 
+                   alpha=0.8, color='#2E86AB')
+            ax.plot(x, predictions[:, i], label='Predicted', linewidth=2, 
+                   alpha=0.8, color='#F18F01', linestyle='--')
+            
+            r2 = r2_score(actuals[:, i], predictions[:, i])
+            mae = mean_absolute_error(actuals[:, i], predictions[:, i])
+            
+            ax.set_title(f'Day {i+1} Forecast (R²={r2:.3f}, MAE=${mae:,.0f})', 
+                        fontsize=13, fontweight='bold')
+            ax.set_xlabel('Sample', fontsize=11)
+            ax.set_ylabel('Bitcoin Price (USD)', fontsize=11)
+            ax.legend(fontsize=10)
+            ax.grid(True, alpha=0.3)
+            ax.yaxis.set_major_formatter(plt.FuncFormatter(
+                lambda x, p: f'${x:,.0f}'))
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {save_path}")
+        plt.close()
+    
+    @staticmethod
+    def plot_error_analysis(predictions, actuals, save_path='transformer/results/04_error_analysis.png'):
+        """Analyze prediction errors"""
+        fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+        
+        # Use first-day predictions for detailed analysis
+        pred = predictions[:, 0]
+        actual = actuals[:, 0]
+        errors = pred - actual
+        pct_errors = (errors / actual) * 100
+        
+        # 1. Scatter plot: Predicted vs Actual
+        axes[0, 0].scatter(actual, pred, alpha=0.5, s=30)
+        min_val, max_val = min(actual.min(), pred.min()), max(actual.max(), pred.max())
+        axes[0, 0].plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2)
+        axes[0, 0].set_xlabel('Actual Price (USD)', fontsize=11)
+        axes[0, 0].set_ylabel('Predicted Price (USD)', fontsize=11)
+        axes[0, 0].set_title('Predicted vs Actual (Day 1)', fontsize=13, fontweight='bold')
+        axes[0, 0].grid(True, alpha=0.3)
+        axes[0, 0].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        axes[0, 0].xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        
+        # 2. Error distribution
+        axes[0, 1].hist(errors, bins=50, color='#C73E1D', alpha=0.7, edgecolor='black')
+        axes[0, 1].axvline(0, color='black', linestyle='--', linewidth=2)
+        axes[0, 1].axvline(errors.mean(), color='red', linestyle='--', linewidth=2, 
+                          label=f'Mean: ${errors.mean():,.0f}')
+        axes[0, 1].set_xlabel('Prediction Error (USD)', fontsize=11)
+        axes[0, 1].set_ylabel('Frequency', fontsize=11)
+        axes[0, 1].set_title('Error Distribution', fontsize=13, fontweight='bold')
+        axes[0, 1].legend()
+        axes[0, 1].grid(True, alpha=0.3, axis='y')
+        
+        # 3. Errors over time
+        x = np.arange(len(errors))
+        axes[1, 0].plot(x, errors, linewidth=1, alpha=0.7, color='#C73E1D')
+        axes[1, 0].axhline(0, color='black', linestyle='--', linewidth=1)
+        axes[1, 0].fill_between(x, 0, errors, alpha=0.3, color='#C73E1D')
+        axes[1, 0].set_xlabel('Sample', fontsize=11)
+        axes[1, 0].set_ylabel('Prediction Error (USD)', fontsize=11)
+        axes[1, 0].set_title('Errors Over Time', fontsize=13, fontweight='bold')
+        axes[1, 0].grid(True, alpha=0.3)
+        
+        # 4. Percentage error distribution
+        axes[1, 1].hist(pct_errors, bins=50, color='#A23B72', alpha=0.7, edgecolor='black')
+        axes[1, 1].axvline(0, color='black', linestyle='--', linewidth=2)
+        axes[1, 1].axvline(pct_errors.mean(), color='red', linestyle='--', linewidth=2,
+                          label=f'Mean: {pct_errors.mean():.2f}%')
+        axes[1, 1].set_xlabel('Percentage Error (%)', fontsize=11)
+        axes[1, 1].set_ylabel('Frequency', fontsize=11)
+        axes[1, 1].set_title('Percentage Error Distribution', fontsize=13, fontweight='bold')
+        axes[1, 1].legend()
+        axes[1, 1].grid(True, alpha=0.3, axis='y')
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {save_path}")
+        plt.close()
+    
+    @staticmethod
+    def plot_training_history(train_losses, val_losses, save_path='transformer/results/05_training_history.png'):
+        """Plot training history"""
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+        
+        epochs = range(1, len(train_losses) + 1)
+        
+        # Loss curves
+        ax1.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
+                markersize=4, alpha=0.7)
+        ax1.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
+                markersize=4, alpha=0.7)
+        ax1.set_xlabel('Epoch', fontsize=12)
+        ax1.set_ylabel('Loss (Huber)', fontsize=12)
+        ax1.set_title('Training History', fontsize=14, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        
+        # Log scale
+        ax2.plot(epochs, train_losses, label='Train Loss', linewidth=2, marker='o', 
+                markersize=4, alpha=0.7)
+        ax2.plot(epochs, val_losses, label='Validation Loss', linewidth=2, marker='s', 
+                markersize=4, alpha=0.7)
+        ax2.set_xlabel('Epoch', fontsize=12)
+        ax2.set_ylabel('Loss (Huber, log scale)', fontsize=12)
+        ax2.set_title('Training History (Log Scale)', fontsize=14, fontweight='bold')
+        ax2.set_yscale('log')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {save_path}")
+        plt.close()
 
 # ============================================================================
 # ADVANCED FEATURE IMPORTANCE ANALYSIS (OPTIONAL)
