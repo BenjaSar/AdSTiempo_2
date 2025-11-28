@@ -26,7 +26,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Import from ETL module
 from src.etl import (
@@ -110,7 +110,7 @@ def main():
     )
     
     # EDA (Optional)
-    eda = BitcoinEDA(df, is_real_data=is_real)
+    eda = BitcoinEDA(df, is_real_data=is_real, output_dir='models/transformer/results/')
     eda.run_full_eda()
 
     # Feature engineering 
@@ -198,7 +198,7 @@ def main():
     )
     
     # Evaluate
-    model.load_state_dict(torch.load('transformer/best_transformer_model.pth'))
+    model.load_state_dict(torch.load('models/transformer/best_transformer_model.pth'))
     predictions, actuals, metrics = ImprovedEvaluator.evaluate(
         model, test_loader, device, returns_scaler
     )

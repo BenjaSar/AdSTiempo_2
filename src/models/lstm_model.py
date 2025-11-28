@@ -160,7 +160,7 @@ class ModelTrainer:
             # Early stopping check
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'lstm/best_lstm_model.pth')
+                torch.save(self.model.state_dict(), 'models/lstm/best_lstm_model.pth')
                 patience_counter = 0
                 status = "✅ (saved)"
             else:
@@ -215,7 +215,7 @@ class ModelTrainer:
         ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig('lstm/results/03_training_history.png', dpi=300, bbox_inches='tight')
+        plt.savefig('models/lstm/results/03_training_history.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: 03_training_history.png\n")
         plt.close()
 
@@ -342,7 +342,7 @@ class Evaluator:
         print("─" * 81 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, dates, save_path='lstm/results/04_predictions.png'):
+    def plot_predictions(predictions, actuals, dates, save_path='models/lstm/results/04_predictions.png'):
         """Visualize predictions"""
         pred_len = predictions.shape[1]
         n_plots = min(pred_len, 4)
@@ -378,7 +378,7 @@ class Evaluator:
         plt.close()
     
     @staticmethod
-    def plot_error_analysis(predictions, actuals, dates, save_path='lstm/results/05_error_analysis.png'):
+    def plot_error_analysis(predictions, actuals, dates, save_path='models/lstm/results/05_error_analysis.png'):
         """Analyze prediction errors"""
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
@@ -492,7 +492,7 @@ class FutureForecaster:
     
     @staticmethod
     def plot_forecast(historical_data, historical_dates, forecasts, 
-                     forecast_dates, save_path='lstm/results/06_future_forecast.png'):
+                     forecast_dates, save_path='models/lstm/results/06_future_forecast.png'):
         """Visualize future forecast"""
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 12))
         
@@ -668,7 +668,7 @@ class FeatureImportance:
         ax.grid(True, alpha=0.3, axis='x')
         
         plt.tight_layout()
-        plt.savefig('lstm/results/07_feature_importance.png', dpi=300, bbox_inches='tight')
+        plt.savefig('models/lstm/results/07_feature_importance.png', dpi=300, bbox_inches='tight')
         print("   ✅ Saved: 07_feature_importance.png\n")
         plt.close()
 

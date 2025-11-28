@@ -549,7 +549,7 @@ class Informer(nn.Module):
             
 #             if val_loss < self.best_val_loss:
 #                 self.best_val_loss = val_loss
-#                 torch.save(self.model.state_dict(), 'informer/best_informer_model.pth')
+#                 torch.save(self.model.state_dict(), 'models/informer/best_informer_model.pth')
 #                 patience_counter = 0
 #                 status = "✅"
 #             else:
@@ -578,7 +578,8 @@ class Informer(nn.Module):
 #     """Model evaluation"""
     
 #     @staticmethod
-#     def evaluate(model, test_loader, device, scaler, config):
+#     def evaluate(model, test_loader, device, scaler, 
+# ):
 #         """Evaluate model"""
 #         print_box("\nMODEL EVALUATION")
         
@@ -661,7 +662,7 @@ class Informer(nn.Module):
 #         print("─" * 80 + "\n")
     
 #     @staticmethod
-#     def plot_predictions(predictions, actuals, save_path='informer/results/03_predictions.png'):
+#     def plot_predictions(predictions, actuals, save_path='models/informer/results/03_predictions.png'):
 #         """Plot predictions"""
 #         pred_len = predictions.shape[1]
 #         n_plots = min(pred_len, 4)
@@ -830,7 +831,7 @@ class ImprovedInformerTrainer:
             
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'informer/best_informer_model.pth')
+                torch.save(self.model.state_dict(), 'models/informer/best_informer_model.pth')
                 patience_counter = 0
                 status = "✅"
             else:
@@ -979,7 +980,7 @@ class ImprovedInformerEvaluator:
         print("─" * 81 + "\n")
     
     @staticmethod
-    def plot_predictions(predictions, actuals, save_path='informer/results/03_predictions.png'):
+    def plot_predictions(predictions, actuals, save_path='models/informer/results/03_predictions.png'):
         """Plot price predictions"""
         pred_len = min(predictions.shape[1], 4)
         
@@ -1013,7 +1014,7 @@ class ImprovedInformerEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_error_analysis(predictions, actuals, save_path='informer/results/04_error_analysis.png'):
+    def plot_error_analysis(predictions, actuals, save_path='models/informer/results/04_error_analysis.png'):
         """Analyze prediction errors"""
         fig, axes = plt.subplots(2, 2, figsize=(18, 12))
         
@@ -1071,7 +1072,7 @@ class ImprovedInformerEvaluator:
         plt.close()
     
     @staticmethod
-    def plot_training_history(train_losses, val_losses, save_path='informer/results/05_training_history.png'):
+    def plot_training_history(train_losses, val_losses, save_path='models/informer/results/05_training_history.png'):
         """Plot training history"""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
         

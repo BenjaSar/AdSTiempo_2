@@ -10,7 +10,7 @@ Key Improvements (same as Transformer improved):
 - Better feature engineering
 
 Usage:
-python informer/bitcoin_informer.py
+python models/informer/bitcoin_informer.py
 """
 
 import numpy as np
@@ -25,7 +25,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Import from ETL module
 from src.etl import BitcoinDataLoader, ImprovedFeatureEngineer
@@ -202,7 +202,7 @@ def main():
     
     # Evaluate
     os.makedirs('informer', exist_ok=True)
-    model.load_state_dict(torch.load('informer/best_informer_model.pth'))
+    model.load_state_dict(torch.load('models/informer/best_informer_model.pth'))
     predictions, actuals, metrics = ImprovedInformerEvaluator.evaluate(
         model, test_loader, device, returns_scaler
     )

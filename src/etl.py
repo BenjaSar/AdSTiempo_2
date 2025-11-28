@@ -6,6 +6,7 @@ and generate realistic synthetic Bitcoin data for analysis and modeling.
 """
 
 import functools
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,6 +17,8 @@ warnings.filterwarnings('ignore')
 # Deep learning libraries
 import torch
 from torch.utils.data import Dataset
+
+OUTPUT_DIR = 'docs/results/' # Default directory to save EDA outputs
 
 # Try to import yfinance for real data
 try:
@@ -144,14 +147,30 @@ class BitcoinDataLoader:
 
 class BitcoinEDA:
     """Comprehensive Exploratory Data Analysis"""
-    
-    def __init__(self, df, is_real_data=False):
+
+    global OUTPUT_DIR
+
+    def __init__(self, df: pd.DataFrame, output_dir: str=None, is_real_data: bool=False):
         self.df = df.copy()
         self.is_real_data = is_real_data
+        if output_dir is not None:
+            # Sanitize and normalize output directory
+            if not isinstance(output_dir, str) or not output_dir.strip():
+                raise ValueError("output_dir must be a non-empty string")
+            sanitized_out = os.path.abspath(os.path.normpath(os.path.expanduser(output_dir.strip())))
+            forbidden = ['/etc', '/bin', '/usr', '/var', '/boot', '/dev', '/proc', '/run', '/sys']
+            for p in forbidden:
+                if sanitized_out == p or sanitized_out.startswith(p + os.path.sep):
+                    raise ValueError("output_dir points to a forbidden system directory")
+            self.output_dir = sanitized_out
+        else:
+            self.output_dir = OUTPUT_DIR
         
     def run_full_eda(self):
         """Execute complete EDA pipeline"""
         print_box("\nEXPLORATORY DATA ANALYSIS (EDA)")
+        
+        os.makedirs(self.output_dir, exist_ok=True) # Create directory if not exists
 
         self._basic_stats()
         self._analyze_returns()
@@ -260,8 +279,8 @@ class BitcoinEDA:
                    ax=ax5, cbar_kws={'shrink': 0.8}, vmin=-1, vmax=1)
         ax5.set_title('Feature Correlation Matrix', fontsize=14, fontweight='bold')
         
-        plt.savefig('transformer/results/01_comprehensive_eda.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: 01_comprehensive_eda.png")
+        plt.savefig(os.path.join(self.output_dir,'01_comprehensive_eda.png'), dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {self.output_dir}01_comprehensive_eda.png")
         plt.close()
         
         # Figure 2: Advanced Analysis
@@ -327,8 +346,8 @@ class BitcoinEDA:
         axes[1, 1].grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig('transformer/results/02_advanced_analysis.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: 02_advanced_analysis.png")
+        plt.savefig(os.path.join(self.output_dir,'02_advanced_analysis.png'), dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {self.output_dir}02_advanced_analysis.png")
         plt.close()
         
         print()

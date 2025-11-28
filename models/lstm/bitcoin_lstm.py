@@ -3,7 +3,7 @@ LSTM: Traditional Time-Series architechture for Forecasting (Benchmark)
 Production-Ready Implementation with Bitcoin Price Prediction
 
 Usage:
-python lstm/bitcoin_lstm.py
+python models/lstm/bitcoin_lstm.py
 """
 
 import numpy as np
@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Import from ETL module
 from src.etl import (
@@ -106,8 +106,8 @@ def main():
         end_date=CONFIG['end_date']
     )
     
-    # EDA (Optional)
-    eda = BitcoinEDA(df, is_real_data=is_real)
+    # EDA (Optional)oy
+    eda = BitcoinEDA(df, is_real_data=is_real, output_dir='models/lstm/results/')
     eda.run_full_eda()
     
     # Feature engineering
@@ -197,7 +197,7 @@ def main():
     )
     
     # Evaluate
-    model.load_state_dict(torch.load('lstm/best_lstm_model.pth'))
+    model.load_state_dict(torch.load('models/lstm/best_lstm_model.pth'))
     
     close_idx = feature_cols.index('Returns')
     predictions, actuals, metrics = Evaluator.evaluate(
