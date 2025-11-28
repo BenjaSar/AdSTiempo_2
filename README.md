@@ -65,17 +65,31 @@ conda activate adst2
 ## 📂 Project Structure
 
 ```
-AdST2_v2/
-├── bitcoin_transformer.py              # Original Transformer implementation
-├── bitcoin_transformer_improved.py     # Improved Transformer (returns-based)
-├── compare_forecast_windows.py         # Compare different forecast windows
+AdST2/
+├── forecast_windows/
+│   ├── results/                            # Results storage 
+│   └── compare_forecast_windows.py         # Comparison between forecasts
 ├── informer/
-│   ├── bitcoin_informer.py            # Original Informer implementation
-│   └── bitcoin_informer_improved.py   # Improved Informer (returns-based)
-├── ventanas/                          # Results storage for different windows
-├── environment.yml                    # Conda environment file
-├── requirements.txt                   # Pip requirements file
-└── README.md                          # This file
+│   ├── results/                            # Results storage 
+│   ├── best_informer_model.pth             # Model weights
+│   └── bitcoin_informer.py                 # Informer implementation
+├── lstm/
+│   ├── results/                            # Results storage 
+│   ├── best_bitcoin_model.pth              # Model weights
+│   └── best_bitcoin_lstm.py                # LSTM implementation (benchmark)
+├── notebooks/
+│   └── EDA.ipynb                           # Exploratory Data Analysis
+├── tests/
+│   └── test_cuda.py                        # Tests GPU availability
+├── transformer/
+│   ├── results/                            # Results storage 
+│   ├── best_bitcoin_model.pth              # Model weights
+│   └── bitcoin_transformer.py              # Original Transformer implementation
+├── .gitignore
+├── CRITERIOS_EVALUACION.md
+├── environment.yml
+├── README.md
+└── requirements.txt
 ```
 
 ## 🎮 Usage
@@ -83,11 +97,11 @@ AdST2_v2/
 ### 1. Train Original Transformer
 
 ```bash
-python bitcoin_transformer.py
+python transformer/bitcoin_transformer.py
 ```
 
 **Outputs:**
-- `best_bitcoin_model.pth` - Model weights
+- `best_bitcoin_model.pth              # Model weights` - Model weights
 - `01_comprehensive_eda.png` - EDA visualizations
 - `02_advanced_analysis.png` - Advanced analysis
 - `03_predictions.png` - Prediction plots
@@ -97,11 +111,11 @@ python bitcoin_transformer.py
 ### 2. Train Improved Transformer (Recommended)
 
 ```bash
-python bitcoin_transformer_improved.py
+python transformer/bitcoin_transformer_improved.py
 ```
 
 **Outputs:**
-- `best_improved_model.pth` - Model weights
+- `best_improved_model.pth              # Model weights` - Model weights
 - `improved_predictions.png` - Prediction plots
 - `improved_error_analysis.png` - Error analysis
 - `improved_training_history.png` - Training curves
@@ -113,7 +127,7 @@ python informer/bitcoin_informer.py
 ```
 
 **Outputs:**
-- `informer/best_informer_model.pth` - Model weights
+- `informer/best_informer_model.pth              # Model weights` - Model weights
 - `informer/01_comprehensive_eda.png` - EDA visualizations
 - `informer/02_advanced_analysis.png` - Advanced analysis
 - `informer/03_predictions.png` - Prediction plots
@@ -125,7 +139,7 @@ python informer/bitcoin_informer_improved.py
 ```
 
 **Outputs:**
-- `informer/best_improved_informer.pth` - Model weights
+- `informer/best_improved_informer.pth              # Model weights` - Model weights
 - `informer/improved_predictions.png` - Prediction plots
 - `informer/improved_error_analysis.png` - Error analysis
 - `informer/improved_training_history.png` - Training curves
