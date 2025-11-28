@@ -20,14 +20,21 @@ from torch.utils.data import Dataset
 
 OUTPUT_DIR = 'docs/results/' # Default directory to save EDA outputs
 
+# Logging utility
+from utils.loggin import get_logger
+logger = get_logger(__name__)
+
 # Try to import yfinance for real data
 try:
     import yfinance as yf
     YFINANCE_AVAILABLE = True
+    logger.debug("yfinance successfully imported for real Bitcoin data loading.")
 except ImportError:
     YFINANCE_AVAILABLE = False
-    print("⚠️  yfinance not available. Install with: pip install yfinance")
+    print("⚠️ yfinance not available. Install with: pip install yfinance")
     print("   Using synthetic data instead...\n")
+    logger.warning("yfinance not available. Install with: pip install yfinance")
+    logger.info("Falling back to synthetic data for Bitcoin dataset.")
 
 # Import formatting utility
 from utils.misc import print_box
@@ -51,7 +58,7 @@ class BitcoinDataLoader:
         
         try:
             print(f"📥 Downloading Bitcoin data from {start_date} to {end_date or 'today'}...")
-            btc = yf.download('BTC-USD', start=start_date, end=end_date, progress=False)
+            btc = yf.download('BTC-USD', start=start_date, end=end_date, progress=True)
             
             if len(btc) == 0:
                 print("⚠️  No data returned from Yahoo Finance")
@@ -472,6 +479,7 @@ class ImprovedFeatureEngineer:
     @staticmethod
     def create_features(df):
         """Create features based on returns"""
+        feature_logger = get_logger(__name__)
         print("🔧 Creating return-based features...")
         
         df = df.copy()
@@ -520,6 +528,7 @@ class ImprovedFeatureEngineer:
         
         print(f"   ✅ Created {len(feature_cols)} features")
         print(f"   ✅ Valid samples: {len(df)}\n")
+        feature_logger.info(f"✅ Created {len(feature_cols)} features")
         
         return df[feature_cols], df['Close']
 
@@ -570,5 +579,42 @@ class ReturnsDataset(Dataset):
         last_price = self.prices[idx + self.seq_len - 1]
         
         return (torch.FloatTensor(x), 
+                torch.FloatTensor(y),
+                torch.FloatTensor([last_price]))
+
+# ============================================================================
+# IMPROVED INFORMER DATASET (same as transformer improved)
+# ============================================================================
+
+class InformerReturnsDataset(Dataset):
+    """Dataset for Informer with returns-based forecasting"""
+    
+    def __init__(self, features, prices, seq_len, label_len, pred_len):
+        self.features = features
+        self.prices = prices
+        self.seq_len = seq_len
+        self.label_len = label_len
+        self.pred_len = pred_len
+        
+    def __len__(self):
+        return len(self.features) - self.seq_len - self.pred_len + 1
+    
+    def __getitem__(self, idx):
+        # Input encoder: feature sequence
+        x_enc = self.features[idx:idx + self.seq_len]
+        
+        # Input decoder: starts with label_len from end of encoder, then zeros
+        x_dec_start = self.features[idx + self.seq_len - self.label_len:idx + self.seq_len]
+        x_dec_zeros = np.zeros((self.pred_len, self.features.shape[1]))
+        x_dec = np.vstack([x_dec_start, x_dec_zeros])
+        
+        # Target: future returns (first feature column)
+        y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
+        
+        # Last price for reconstruction
+        last_price = self.prices[idx + self.seq_len - 1]
+        
+        return (torch.FloatTensor(x_enc), 
+                torch.FloatTensor(x_dec),
                 torch.FloatTensor(y),
                 torch.FloatTensor([last_price]))

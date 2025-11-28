@@ -89,7 +89,7 @@ def main():
         'epochs': 100,
         'learning_rate': 0.0005,  # -> Slightly lower
         'warmup_epochs': 5,
-        'patience': 15,
+        'patience': 30,          # Early stopping patience -> Increased
         
         # Data split
         'train_ratio': 0.7,

@@ -1,7 +1,8 @@
+""""Utility module for creating a colored logger with file and console output."""
+
 import logging
 import colorlog
 import os
-from datetime import datetime
 
 def get_logger(name=None, log_file='logs/login.txt'):
     """Get or create a colored logger instance with file and console output"""
@@ -50,14 +51,15 @@ def get_logger(name=None, log_file='logs/login.txt'):
     
     return logger
 
-# Create default logger for module-level logging
-logger = get_logger('my_colored_logger')
+if __name__ == "__main__":
+    # Create default logger for module-level logging
+    logger = get_logger('my_colored_logger')
 
-# Log messages only on first import
-if not hasattr(logger, '_initialized'):
-    logger.debug("This is a debug message.")
-    logger.info("This is an info message.")
-    logger.warning("This is a warning message.")
-    logger.error("This is an error message.")
-    logger.critical("This is a critical message.")
-    logger._initialized = True
+    # Log messages only on first import
+    if not hasattr(logger, '_initialized'):
+        logger.debug("This is a debug message.")
+        logger.info("This is an info message.")
+        logger.warning("This is a warning message.")
+        logger.error("This is an error message.")
+        logger.critical("This is a critical message.")
+        logger._initialized = True

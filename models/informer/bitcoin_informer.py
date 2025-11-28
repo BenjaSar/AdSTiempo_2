@@ -28,12 +28,15 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Import from ETL module
-from src.etl import BitcoinDataLoader, ImprovedFeatureEngineer
+from src.etl import (
+    BitcoinDataLoader,
+    ImprovedFeatureEngineer,
+    InformerReturnsDataset,
+)
 
 # Import Informer architecture
 from src.models.informer_model import (
     Informer,
-    InformerReturnsDataset,
     ImprovedInformerTrainer,
     ImprovedInformerEvaluator
 )
@@ -84,7 +87,7 @@ def main():
         'epochs': 100,
         'learning_rate': 0.0005, # -> Slightly lower
         'warmup_epochs': 5,
-        'patience': 15,
+        'patience': 30,          # Early stopping patience -> Increased
         
         # Data split
         'train_ratio': 0.7,
