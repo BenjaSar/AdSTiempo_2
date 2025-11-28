@@ -1,5 +1,6 @@
-2025-11-19 21:35:30 - my_colored_logger - DEBUG - This is a debug message.
-2025-11-19 21:35:30 - my_colored_logger - INFO - This is an info message.
-2025-11-19 21:35:30 - my_colored_logger - WARNING - This is a warning message.
-2025-11-19 21:35:30 - my_colored_logger - ERROR - This is an error message.
-2025-11-19 21:35:30 - my_colored_logger - CRITICAL - This is a critical message.
+2025-11-28 14:06:18 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-11-28 14:06:26 - src.etl - INFO - ✅ Created 13 features
+2025-11-28 14:30:05 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-11-28 14:30:07 - src.etl - INFO - ✅ Created 13 features
+2025-11-28 14:31:52 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-11-28 14:32:00 - src.etl - INFO - ✅ Created 13 features
