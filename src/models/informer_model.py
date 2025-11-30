@@ -869,6 +869,8 @@ class ImprovedInformerEvaluator:
         model.eval()
         pred_returns, actual_returns, last_prices = [], [], []
         
+        print("📊 Generating predictions on test set...")
+
         with torch.no_grad():
             for x_enc, x_dec, target, last_price in test_loader:
                 x_enc = x_enc.to(device)

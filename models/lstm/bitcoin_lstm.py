@@ -75,7 +75,7 @@ def main():
         'pred_len': 45,         # Forecast horizon
         'hidden_dim': 128,      # LSTM hidden dimension (renamed from d_model)
         'num_layers': 3,        # Number of LSTM layers
-        'dropout': 0.1,         # Dropout rate
+        'dropout': 0.3,         # Dropout rate
         # TRANSFORMER SPECIFIC PARAMS 
         # 'd_model': 128,         # Model dimension
         # 'nhead': 8,             # Number of attention heads
@@ -127,10 +127,6 @@ def main():
     scaler = MinMaxScaler(feature_range=(-1, 1))
     scaled_features = scaler.fit_transform(df_features.values)
     prices_array = prices.values
-    
-    # Create separate scaler for returns only (first column)
-    returns_scaler = MinMaxScaler(feature_range=(-1, 1)) # previously StandardScaler
-    returns_scaler.fit(df_features[['Returns']].values)
     
     # Split data
     n = len(scaled_features)
@@ -204,11 +200,13 @@ def main():
         model, test_loader, device, scaler, close_idx
     )
 
+    print(f" Last Known Price: ${prices.iloc[-1]:,.2f}")
+
     # FORECASTING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     last_sequence = test_features[-CONFIG['seq_len']:]
     
     forecasts = FutureForecaster.forecast_recursive(
-        model, last_sequence, scaler, close_idx, 
+        model, last_sequence, prices.iloc[-1], scaler, close_idx,
         n_days=CONFIG['forecast_days'], device=device
     )
     

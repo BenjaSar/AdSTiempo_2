@@ -756,6 +756,8 @@ class ImprovedEvaluator:
         model.eval()
         pred_returns, actual_returns, last_prices = [], [], []
         
+        print("📊 Generating predictions on test set...")
+        
         with torch.no_grad():
             for batch_x, batch_y, batch_last_price in test_loader:
                 batch_x = batch_x.to(device)
