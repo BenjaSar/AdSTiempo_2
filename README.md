@@ -1,16 +1,15 @@
 # Bitcoin Price Forecasting with Transformer & Informer
 
-Advanced time series forecasting project comparing Transformer and Informer architectures for Bitcoin price prediction, with returns-based training improvements.
+Advanced time series forecasting project comparing Transformer, Informer and LSTM architectures for Bitcoin price prediction, with returns-based training improvements.
 
 ## 📋 Project Overview
 
 This project implements and compares two state-of-the-art deep learning architectures for Bitcoin price forecasting:
-- **Transformer**: Standard attention-based architecture
-- **Informer**: Efficient transformer with ProbSparse attention (O(L log L) complexity)
+- **Transformer**: Standard attention-based architecture,
+- **Informer**: Efficient transformer with ProbSparse attention (O(L log L) complexity),
+- **LSTM**: Traditional Time Series architecture.
 
-Each architecture is implemented in two versions:
-1. **Original**: Price-based training with standard techniques
-2. **Improved**: Returns-based training with advanced optimization
+Read in detail in [this section](#-model-architectures)
 
 ## 🎯 Key Features
 
@@ -22,13 +21,44 @@ Each architecture is implemented in two versions:
 - ✅ Detailed performance metrics (RMSE, MAE, R², MAPE, Directional Accuracy)
 - ✅ Extensive visualizations and comparison plots
 
+## 📂 Project Structure
+
+```
+AdST2/
+├── forecast_windows/
+│   ├── results/                            # Results storage 
+│   └── compare_forecast_windows.py         # Comparison between forecasts
+├── informer/
+│   ├── results/                            # Results storage 
+│   ├── best_informer_model.pth             # Model weights
+│   └── bitcoin_informer.py                 # Informer implementation (Improvement)
+├── lstm/
+│   ├── results/                            # Results storage 
+│   ├── best_lstm_model.pth                 # Model weights
+│   └── bitcoin_lstm.py                     # LSTM implementation (Benchmark)
+├── tests/
+│   ├── check_cuda.py                       # Verifies GPU availability
+│   ├── fix_api.py                          # If Yahoo Finance API is not working, this fixs it.
+│   └── test_api.py                         # Checks Yahoo Finance API is working
+├── models/transformer/
+│   ├── results/                            # Results storage 
+│   ├── best_transformer_model.pth          # Model weights
+│   └── bitcoin_transformer.py              # Transformer implementation (Original)
+├── .gitignore
+├── CRITERIOS_EVALUACION.md
+├── environment.yml
+├── README.md
+├── EDA.ipynb                               # Exploratory Data Analysis ??
+└── requirements.txt
+```
+
 ## 🚀 Installation
 
 ### Option 1: Using pip (Recommended for this project)
 
 ```bash
 # Navigate to project directory
-cd F:\IA\AdST2_v2
+cd path/to/your/project  # Replace with your actual project directory
 
 # Create virtual environment
 python -m venv adst2
@@ -41,13 +71,18 @@ pip install -r requirements.txt
 ```
 
 ### Option 2: Using conda
-
 ```bash
 # Create environment from yml file
 conda env create -f environment.yml
 
 # Activate environment
 conda activate adst2
+```
+
+### Finally: Run unit tests
+Verify everything is working properly
+```bash
+python -m pytest
 ```
 
 ## 📦 Requirements
@@ -62,60 +97,65 @@ conda activate adst2
 - SciPy 1.11.0
 - yfinance 0.2.31
 
+<<<<<<< Updated upstream
 ## 📂 Project Structure
 
 ```
-AdST2/
-├── forecast_windows/
-│   ├── results/                            # Results storage 
-│   └── compare_forecast_windows.py         # Comparison between forecasts
+AdST2_v2/
+├── bitcoin_transformer.py              # Original Transformer implementation
+├── bitcoin_transformer_improved.py     # Improved Transformer (returns-based)
+├── compare_forecast_windows.py         # Compare different forecast windows
 ├── informer/
-│   ├── results/                            # Results storage 
-│   ├── best_informer_model.pth             # Model weights
-│   └── bitcoin_informer.py                 # Informer implementation
-├── lstm/
-│   ├── results/                            # Results storage 
-│   ├── best_bitcoin_model.pth              # Model weights
-│   └── best_bitcoin_lstm.py                # LSTM implementation (benchmark)
-├── notebooks/
-│   └── EDA.ipynb                           # Exploratory Data Analysis
-├── tests/
-│   └── test_cuda.py                        # Tests GPU availability
-├── transformer/
-│   ├── results/                            # Results storage 
-│   ├── best_bitcoin_model.pth              # Model weights
-│   └── bitcoin_transformer.py              # Original Transformer implementation
-├── .gitignore
-├── CRITERIOS_EVALUACION.md
-├── environment.yml
-├── README.md
-└── requirements.txt
+│   ├── bitcoin_informer.py            # Original Informer implementation
+│   └── bitcoin_informer_improved.py   # Improved Informer (returns-based)
+├── ventanas/                          # Results storage for different windows
+├── environment.yml                    # Conda environment file
+├── requirements.txt                   # Pip requirements file
+└── README.md                          # This file
 ```
 
+=======
+>>>>>>> Stashed changes
 ## 🎮 Usage
 
-### 1. Train Original Transformer
+### 1. Train Model
+
+You can choose between different models:
+1. transformer
+1. informer
+1. lstm
+
+Replace *{model}* with the one you've choosed.
 
 ```bash
-python transformer/bitcoin_transformer.py
+<<<<<<< Updated upstream
+python bitcoin_transformer.py
 ```
 
 **Outputs:**
-- `best_bitcoin_model.pth              # Model weights` - Model weights
+- `best_bitcoin_model.pth` - Model weights
+=======
+python {model}/bitcoin_{model}.py
+```
+
+**Outputs:**
+- `best_{model}_model.pth` - Model weights
+>>>>>>> Stashed changes
 - `01_comprehensive_eda.png` - EDA visualizations
 - `02_advanced_analysis.png` - Advanced analysis
 - `03_predictions.png` - Prediction plots
 - `04_error_analysis.png` - Error analysis
 - `05_training_history.png` - Training curves
 
+<<<<<<< Updated upstream
 ### 2. Train Improved Transformer (Recommended)
 
 ```bash
-python transformer/bitcoin_transformer_improved.py
+python bitcoin_transformer_improved.py
 ```
 
 **Outputs:**
-- `best_improved_model.pth              # Model weights` - Model weights
+- `best_improved_model.pth` - Model weights
 - `improved_predictions.png` - Prediction plots
 - `improved_error_analysis.png` - Error analysis
 - `improved_training_history.png` - Training curves
@@ -127,7 +167,7 @@ python informer/bitcoin_informer.py
 ```
 
 **Outputs:**
-- `informer/best_informer_model.pth              # Model weights` - Model weights
+- `informer/best_informer_model.pth` - Model weights
 - `informer/01_comprehensive_eda.png` - EDA visualizations
 - `informer/02_advanced_analysis.png` - Advanced analysis
 - `informer/03_predictions.png` - Prediction plots
@@ -139,12 +179,15 @@ python informer/bitcoin_informer_improved.py
 ```
 
 **Outputs:**
-- `informer/best_improved_informer.pth              # Model weights` - Model weights
+- `informer/best_improved_informer.pth` - Model weights
 - `informer/improved_predictions.png` - Prediction plots
 - `informer/improved_error_analysis.png` - Error analysis
 - `informer/improved_training_history.png` - Training curves
 
 ### 5. Compare Forecast Windows
+=======
+### 2. Compare Forecast Windows
+>>>>>>> Stashed changes
 
 First, train models with different prediction lengths (modify `CONFIG['pred_len']`):
 - 7 days
@@ -166,6 +209,15 @@ python compare_forecast_windows.py
 
 ## 🔬 Model Architectures
 
+### LSTM
+- **Architecture**: Long Short-Term Memory with stacked layers
+- **Complexity**: O(L) sequential processing
+- **Best for**: Capturing temporal dependencies and long-term patterns
+- **Key features**:
+  - Gated memory cells
+  - Bidirectional processing option
+  - Superior to vanilla RNN for long sequences
+
 ### Transformer
 - **Architecture**: Standard multi-head self-attention
 - **Complexity**: O(L²) where L is sequence length
@@ -181,6 +233,8 @@ python compare_forecast_windows.py
   - Generative decoder
 
 ## 📊 Improvements Applied
+
+During the development phase, we've explored two different implementations. We successfully improved model accuracy by applying the following changes.
 
 ### Original Version
 - Raw price prediction
@@ -198,6 +252,8 @@ python compare_forecast_windows.py
 - ✅ **Enhanced features**: 13 features including volatility, momentum, RSI
 - ✅ **Gradient clipping**: Training stability
 - ✅ **Directional accuracy**: Additional evaluation metric
+
+For clarity, we decided to remove these development versions from the main branch. The original implementation can be analyzed side-by-side on the 'Legacy' branch.
 
 ## 📈 Performance Metrics
 
@@ -275,6 +331,11 @@ CONFIG = {
 pip install yfinance --upgrade
 ```
 
+### yfinance not working
+```bash
+python tests/fix_api.py
+```
+
 ### CUDA Out of Memory
 Reduce `batch_size` in CONFIG:
 ```python
@@ -287,19 +348,25 @@ Ensure environment is activated:
 adst2\Scripts\activate  # Windows
 ```
 
-## 📚 References
+### Run unit tests
+```bash
+python -m pytest -v
+```
 
-1. **Transformer**: Vaswani et al., "Attention is All You Need" (2017)
-2. **Informer**: Zhou et al., "Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting" (2021)
-3. **Returns-based Training**: Standard practice in financial forecasting
+## 📚 References
+1.  **LSTM**: [Hochreiter & Schmidhuber, "Long Short-Term Memory" (1997)](https://www.bioinf.jku.at/publications/older/2604.pdf)
+
+2.  **Transformer**: [Vaswani et al., "Attention Is All You Need" (2017)](https://arxiv.org/abs/1706.03762)
+
+3.  **Informer**: [Zhou et al., "Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting" (2021)](https://arxiv.org/abs/2012.07436)
+
+4.  **Returns-based Training**: [Standard practice in financial forecasting (Methodology)](https://ssrn.com/abstract=3971306)
 
 ## 👨‍💻 Author
-
 Applied Data Science & Transformers 2 - Project v2
 
 ## 📄 License
-
-This project is for educational purposes.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
