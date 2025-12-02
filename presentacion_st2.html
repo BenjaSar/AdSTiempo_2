@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Series de Tiempo 2 - Trabajo Final | UBA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --uba-blue: #003366;
+            --uba-light-blue: #0066cc;
+            --uba-gold: #c9a227;
+            --dark-bg: #1a1a2e;
+            --light-text: #f0f0f0;
+            --accent: #4cc9f0;
+            --success: #06d6a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: var(--light-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Slide container */
+        .slide-container {
+            width: 100%;
+            min-height: 100vh;
+            scroll-snap-type: y mandatory;
+            overflow-y: auto;
+        }
+
+        .slide {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            scroll-snap-align: start;
+            position: relative;
+        }
+
+        /* Title slide */
+        .title-slide {
+            background: linear-gradient(135deg, var(--uba-blue) 0%, #1a1a2e 100%);
+            text-align: center;
+        }
+
+        .uba-logo {
+            width: 180px;
+            height: auto;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 4px 20px rgba(255,255,255,0.3));
+        }
+
+        .title-slide h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--uba-gold);
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .title-slide h2 {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-weight: 300;
+            margin-bottom: 2rem;
+            color: var(--light-text);
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .author-info {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .author-info p {
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        /* Content slides */
+        .content-slide {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .slide-header {
+            width: 100%;
+            max-width: 1400px;
+            margin-bottom: 2rem;
+        }
+
+        .slide-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            color: var(--uba-gold);
+            border-bottom: 3px solid var(--accent);
+            padding-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .slide-content {
+            width: 100%;
+            max-width: 1400px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            flex: 1;
+            min-width: 300px;
+            max-width: 450px;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .card h3 {
+            color: var(--accent);
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card p, .card li {
+            color: rgba(255,255,255,0.85);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .card ul li::before {
+            content: "→ ";
+            color: var(--uba-gold);
+        }
+
+        /* Stats cards */
+        .stat-card {
+            text-align: center;
+            min-width: 200px;
+            flex: 0 1 250px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tables */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        th {
+            background: rgba(0,51,102,0.5);
+            color: var(--uba-gold);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .best-value {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .worst-value {
+            color: var(--danger);
+        }
+
+        /* Charts */
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            height: 400px;
+            margin: 1rem auto;
+        }
+
+        .chart-wrapper {
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* Model cards */
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .model-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .model-card:hover {
+            border-color: var(--accent);
+            transform: scale(1.02);
+        }
+
+        .model-card h4 {
+            color: var(--uba-gold);
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .model-card .params {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 0.5rem;
+        }
+
+        /* Conclusion slide */
+        .conclusion-slide {
+            background: linear-gradient(135deg, #0f3460 0%, var(--uba-blue) 100%);
+        }
+
+        .conclusion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+        }
+
+        .conclusion-item {
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            border-left: 4px solid var(--uba-gold);
+        }
+
+        .conclusion-item h4 {
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Image containers */
+        .img-container {
+            width: 100%;
+            max-width: 900px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            margin: 1rem 0;
+        }
+
+        .img-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Navigation */
+        .nav-dots {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-dot:hover, .nav-dot.active {
+            background: var(--uba-gold);
+            transform: scale(1.3);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--uba-gold), var(--accent));
+            width: 0%;
+            z-index: 1000;
+            transition: width 0.3s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .slide {
+                padding: 1rem;
+            }
+
+            .card {
+                min-width: 100%;
+            }
+
+            .nav-dots {
+                right: 0.5rem;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        /* Methodology flow */
+        .methodology-flow {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            max-width: 1200px;
+        }
+
+        .method-step {
+            background: rgba(255,255,255,0.05);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 150px;
+            flex: 1;
+            max-width: 200px;
+            position: relative;
+        }
+
+        .method-step::after {
+            content: "→";
+            position: absolute;
+            right: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--uba-gold);
+            font-size: 1.5rem;
+        }
+
+        .method-step:last-child::after {
+            display: none;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: var(--uba-gold);
+            color: var(--uba-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin: 0 auto 0.5rem;
+        }
+
+        /* Footer */
+        .slide-footer {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* Badge for winner */
+        .winner-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--uba-gold), #e8c547);
+            color: var(--uba-blue);
+            padding: 0.3rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        /* Highlight box */
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(201, 162, 39, 0.2), rgba(76, 201, 240, 0.1));
+            border: 2px solid var(--uba-gold);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+
+        .highlight-box h3 {
+            color: var(--uba-gold);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .highlight-box .big-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <nav class="nav-dots" id="navDots">
+        <div class="nav-dot active" data-slide="0"></div>
+        <div class="nav-dot" data-slide="1"></div>
+        <div class="nav-dot" data-slide="2"></div>
+        <div class="nav-dot" data-slide="3"></div>
+        <div class="nav-dot" data-slide="4"></div>
+        <div class="nav-dot" data-slide="5"></div>
+        <div class="nav-dot" data-slide="6"></div>
+        <div class="nav-dot" data-slide="7"></div>
+        <div class="nav-dot" data-slide="8"></div>
+        <div class="nav-dot" data-slide="9"></div>
+    </nav>
+
+    <div class="slide-container" id="slideContainer">
+
+        <!-- Slide 1: Portada -->
+        <section class="slide title-slide" id="slide-0">
+            <svg class="uba-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#c9a227"/>
+                        <stop offset="100%" style="stop-color:#e8c547"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="100" cy="100" r="95" fill="none" stroke="url(#logoGrad)" stroke-width="4"/>
+                <circle cx="100" cy="100" r="80" fill="none" stroke="url(#logoGrad)" stroke-width="2"/>
+                <text x="100" y="85" text-anchor="middle" fill="url(#logoGrad)" font-family="Playfair Display, serif" font-size="28" font-weight="700">UBA</text>
+                <text x="100" y="115" text-anchor="middle" fill="#f0f0f0" font-family="Roboto, sans-serif" font-size="12">UNIVERSIDAD DE</text>
+                <text x="100" y="130" text-anchor="middle" fill="#f0f0f0" font-family="Roboto, sans-serif" font-size="12">BUENOS AIRES</text>
+                <path d="M60 150 L100 170 L140 150" fill="none" stroke="url(#logoGrad)" stroke-width="2"/>
+            </svg>
+
+            <p class="subtitle">Maestria en Inteligencia Artificial</p>
+            <h1>Series de Tiempo II</h1>
+            <h2>Analisis Comparativo de Modelos para<br>Prediccion de Precios de Bitcoin</h2>
+
+            <div class="author-info">
+                <p><strong>Docente:</strong> Camilo Argoty</p>
+                <p><strong>Periodo:</strong> 2024</p>
+                <p><strong>Facultad de Ingenieria</strong></p>
+            </div>
+
+            <div class="slide-footer">Presione ↓ o scroll para continuar</div>
+        </section>
+
+        <!-- Slide 2: Introduccion -->
+        <section class="slide content-slide" id="slide-1">
+            <div class="slide-header">
+                <h2>Introduccion y Motivacion</h2>
+            </div>
+            <div class="slide-content">
+                <div class="card">
+                    <h3>Contexto del Problema</h3>
+                    <p>La prediccion de series de tiempo financieras representa uno de los desafios mas complejos en el analisis cuantitativo debido a:</p>
+                    <ul>
+                        <li>Alta volatilidad y no-estacionariedad</li>
+                        <li>Dependencias temporales complejas</li>
+                        <li>Influencia de factores exogenos</li>
+                        <li>Comportamiento no-lineal</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Objetivo del Estudio</h3>
+                    <p>Comparar el desempeno de modelos clasicos de series de tiempo con arquitecturas de deep learning para la prediccion de precios de Bitcoin en multiples horizontes temporales.</p>
+                    <ul>
+                        <li>Horizonte corto: 7 dias</li>
+                        <li>Horizonte medio: 14 dias</li>
+                        <li>Horizonte largo: 30 dias</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Datos Utilizados</h3>
+                    <ul>
+                        <li><strong>Activo:</strong> Bitcoin (BTC-USD)</li>
+                        <li><strong>Periodo:</strong> 2020-01-01 a 2024-10-31</li>
+                        <li><strong>Observaciones:</strong> 1,766 dias</li>
+                        <li><strong>Train/Test:</strong> 80% / 20%</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: Estadisticas descriptivas -->
+        <section class="slide content-slide" id="slide-2">
+            <div class="slide-header">
+                <h2>Analisis Exploratorio de Datos</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="card stat-card">
+                        <span class="stat-value">$7,200</span>
+                        <span class="stat-label">Precio Inicial</span>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="stat-value">$70,215</span>
+                        <span class="stat-label">Precio Final</span>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="stat-value" style="color: var(--success);">+875%</span>
+                        <span class="stat-label">Retorno Total</span>
+                    </div>
+                    <div class="card stat-card">
+                        <span class="stat-value" style="color: var(--warning);">53.5%</span>
+                        <span class="stat-label">Volatilidad Anual</span>
+                    </div>
+                </div>
+                <div class="img-container">
+                    <img src="final_st2_results_v3/01_EDA.png" alt="Analisis Exploratorio" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico EDA - Ver archivo: final_st2_results_v3/01_EDA.png</div>'">
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Metodologia -->
+        <section class="slide content-slide" id="slide-3">
+            <div class="slide-header">
+                <h2>Metodologia</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column;">
+                <div class="methodology-flow">
+                    <div class="method-step">
+                        <div class="step-number">1</div>
+                        <strong>Preprocesamiento</strong>
+                        <p style="font-size:0.85rem;">Limpieza y normalizacion</p>
+                    </div>
+                    <div class="method-step">
+                        <div class="step-number">2</div>
+                        <strong>Feature Engineering</strong>
+                        <p style="font-size:0.85rem;">71 caracteristicas</p>
+                    </div>
+                    <div class="method-step">
+                        <div class="step-number">3</div>
+                        <strong>Tests Estacionariedad</strong>
+                        <p style="font-size:0.85rem;">ADF y KPSS</p>
+                    </div>
+                    <div class="method-step">
+                        <div class="step-number">4</div>
+                        <strong>Entrenamiento</strong>
+                        <p style="font-size:0.85rem;">5 modelos</p>
+                    </div>
+                    <div class="method-step">
+                        <div class="step-number">5</div>
+                        <strong>Evaluacion</strong>
+                        <p style="font-size:0.85rem;">RMSE, MAE, R2, MAPE</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; margin-top: 2rem;">
+                    <div class="card" style="flex: 1; min-width: 280px;">
+                        <h3>Tests de Estacionariedad</h3>
+                        <table>
+                            <tr><th>Serie</th><th>ADF p-value</th><th>Resultado</th></tr>
+                            <tr><td>Precios</td><td>0.7289</td><td style="color:var(--danger);">No Estacionaria</td></tr>
+                            <tr><td>1ra Diferencia</td><td>0.0000</td><td style="color:var(--success);">Estacionaria</td></tr>
+                            <tr><td>Log Returns</td><td>0.0000</td><td style="color:var(--success);">Estacionaria</td></tr>
+                        </table>
+                    </div>
+                    <div class="card" style="flex: 1; min-width: 280px;">
+                        <h3>Feature Engineering</h3>
+                        <ul>
+                            <li>Indicadores tecnicos (RSI, MACD, BB)</li>
+                            <li>Medias moviles (5, 7, 14, 21, 30, 60)</li>
+                            <li>Volatilidad (5, 10, 20, 30 dias)</li>
+                            <li>Momentum y ROC</li>
+                            <li>Features temporales ciclicos</li>
+                            <li>Lags de precios y retornos</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: Modelos -->
+        <section class="slide content-slide" id="slide-4">
+            <div class="slide-header">
+                <h2>Modelos Implementados</h2>
+            </div>
+            <div class="model-grid">
+                <div class="model-card">
+                    <h4>ARIMA</h4>
+                    <p>Modelo clasico autoregresivo integrado de media movil.</p>
+                    <ul>
+                        <li>Orden optimo: (2, 1, 2)</li>
+                        <li>AIC: 23,897.66</li>
+                        <li>Seleccion automatica via grid search</li>
+                    </ul>
+                </div>
+                <div class="model-card">
+                    <h4>SARIMA</h4>
+                    <p>Extension estacional del modelo ARIMA.</p>
+                    <ul>
+                        <li>Orden: (1,1,1)(1,1,1,7)</li>
+                        <li>AIC: 23,679.88</li>
+                        <li>Estacionalidad semanal</li>
+                    </ul>
+                </div>
+                <div class="model-card">
+                    <h4>LSTM</h4>
+                    <p>Red neuronal recurrente con memoria a largo plazo.</p>
+                    <ul>
+                        <li>Hidden dim: 128</li>
+                        <li>Capas: 3</li>
+                        <li>Dropout: 0.1</li>
+                    </ul>
+                    <p class="params">376,071 parametros</p>
+                </div>
+                <div class="model-card">
+                    <h4>Transformer</h4>
+                    <p>Arquitectura basada en atencion multi-cabeza.</p>
+                    <ul>
+                        <li>d_model: 128</li>
+                        <li>Heads: 8</li>
+                        <li>Capas encoder: 3</li>
+                    </ul>
+                    <p class="params">803,463 parametros</p>
+                </div>
+                <div class="model-card">
+                    <h4>Informer</h4>
+                    <p>Transformer eficiente con ProbSparse attention.</p>
+                    <ul>
+                        <li>d_model: 512</li>
+                        <li>Factor: 5</li>
+                        <li>Complejidad: O(L log L)</li>
+                    </ul>
+                    <p class="params">7,134,215 parametros</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Resultados 7 dias -->
+        <section class="slide content-slide" id="slide-5">
+            <div class="slide-header">
+                <h2>Resultados: Horizonte 7 Dias</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div class="table-container" style="max-width: 900px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modelo</th>
+                                <th>RMSE (USD)</th>
+                                <th>MAE (USD)</th>
+                                <th>R2</th>
+                                <th>MAPE (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>SARIMA</strong> <span class="winner-badge">MEJOR</span></td>
+                                <td class="best-value">$818.40</td>
+                                <td class="best-value">$713.79</td>
+                                <td>-0.314</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>ARIMA</td>
+                                <td>$839.75</td>
+                                <td>$727.62</td>
+                                <td>-0.384</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>Informer</td>
+                                <td>$6,091.82</td>
+                                <td>$5,885.69</td>
+                                <td>-71.83</td>
+                                <td>16.02%</td>
+                            </tr>
+                            <tr>
+                                <td>LSTM</td>
+                                <td>$6,798.05</td>
+                                <td>$6,090.61</td>
+                                <td>-89.69</td>
+                                <td>16.58%</td>
+                            </tr>
+                            <tr>
+                                <td>Transformer</td>
+                                <td class="worst-value">$8,741.63</td>
+                                <td class="worst-value">$8,655.51</td>
+                                <td class="worst-value">-148.96</td>
+                                <td class="worst-value">23.58%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="img-container" style="max-width: 1000px;">
+                    <img src="final_st2_results_v3/comparison_7d.png" alt="Comparacion 7 dias" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico de comparacion - Ver archivo: final_st2_results_v3/comparison_7d.png</div>'">
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: Resultados 14 dias -->
+        <section class="slide content-slide" id="slide-6">
+            <div class="slide-header">
+                <h2>Resultados: Horizonte 14 Dias</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div class="table-container" style="max-width: 900px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modelo</th>
+                                <th>RMSE (USD)</th>
+                                <th>MAE (USD)</th>
+                                <th>R2</th>
+                                <th>MAPE (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>SARIMA</strong> <span class="winner-badge">MEJOR</span></td>
+                                <td class="best-value">$721.32</td>
+                                <td class="best-value">$577.28</td>
+                                <td class="best-value">0.047</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>ARIMA</td>
+                                <td>$744.07</td>
+                                <td>$638.19</td>
+                                <td>-0.015</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>LSTM</td>
+                                <td>$5,029.12</td>
+                                <td>$4,049.40</td>
+                                <td>-45.35</td>
+                                <td>10.92%</td>
+                            </tr>
+                            <tr>
+                                <td>Informer</td>
+                                <td>$5,895.89</td>
+                                <td>$5,767.02</td>
+                                <td>-62.70</td>
+                                <td>15.56%</td>
+                            </tr>
+                            <tr>
+                                <td>Transformer</td>
+                                <td class="worst-value">$8,328.82</td>
+                                <td class="worst-value">$8,265.08</td>
+                                <td class="worst-value">-126.12</td>
+                                <td class="worst-value">22.32%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="img-container" style="max-width: 1000px;">
+                    <img src="final_st2_results_v3/comparison_14d.png" alt="Comparacion 14 dias" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico de comparacion - Ver archivo: final_st2_results_v3/comparison_14d.png</div>'">
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: Resultados 30 dias -->
+        <section class="slide content-slide" id="slide-7">
+            <div class="slide-header">
+                <h2>Resultados: Horizonte 30 Dias</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div class="table-container" style="max-width: 900px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modelo</th>
+                                <th>RMSE (USD)</th>
+                                <th>MAE (USD)</th>
+                                <th>R2</th>
+                                <th>MAPE (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>SARIMA</strong> <span class="winner-badge">MEJOR</span></td>
+                                <td class="best-value">$3,181.76</td>
+                                <td class="best-value">$2,159.79</td>
+                                <td>-0.311</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>ARIMA</td>
+                                <td>$3,446.22</td>
+                                <td>$2,392.03</td>
+                                <td>-0.537</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>LSTM</td>
+                                <td>$5,633.57</td>
+                                <td>$4,859.34</td>
+                                <td>-3.11</td>
+                                <td>11.99%</td>
+                            </tr>
+                            <tr>
+                                <td>Informer</td>
+                                <td>$7,413.11</td>
+                                <td>$7,069.97</td>
+                                <td>-6.11</td>
+                                <td>17.67%</td>
+                            </tr>
+                            <tr>
+                                <td>Transformer</td>
+                                <td class="worst-value">$8,787.45</td>
+                                <td class="worst-value">$8,649.90</td>
+                                <td class="worst-value">-9.00</td>
+                                <td class="worst-value">21.73%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="img-container" style="max-width: 1000px;">
+                    <img src="final_st2_results_v3/comparison_30d.png" alt="Comparacion 30 dias" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico de comparacion - Ver archivo: final_st2_results_v3/comparison_30d.png</div>'">
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 9: Analisis comparativo -->
+        <section class="slide content-slide" id="slide-8">
+            <div class="slide-header">
+                <h2>Analisis Comparativo</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div class="chart-wrapper">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; margin-top: 2rem;">
+                    <div class="card">
+                        <h3>Modelos Estadisticos</h3>
+                        <ul>
+                            <li>Mejor desempeno en todos los horizontes</li>
+                            <li>SARIMA supera a ARIMA consistentemente</li>
+                            <li>Capturan tendencia local efectivamente</li>
+                            <li>Bajo costo computacional</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Modelos Deep Learning</h3>
+                        <ul>
+                            <li>Alto error en prediccion directa</li>
+                            <li>Posible overfitting en entrenamiento</li>
+                            <li>Requieren mas datos historicos</li>
+                            <li>LSTM mejor que Transformer e Informer</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 10: Conclusiones -->
+        <section class="slide conclusion-slide" id="slide-9">
+            <div class="slide-header">
+                <h2>Conclusiones</h2>
+            </div>
+            <div class="conclusion-grid">
+                <div class="conclusion-item">
+                    <h4>Resultado Principal</h4>
+                    <p>SARIMA demostro ser el modelo mas efectivo para la prediccion de precios de Bitcoin en los tres horizontes evaluados, superando tanto a ARIMA como a las arquitecturas de deep learning.</p>
+                </div>
+                <div class="conclusion-item">
+                    <h4>Limitaciones del Deep Learning</h4>
+                    <p>Los modelos de deep learning (LSTM, Transformer, Informer) mostraron alto error de prediccion, probablemente debido a la cantidad limitada de datos y la alta volatilidad del activo.</p>
+                </div>
+                <div class="conclusion-item">
+                    <h4>Implicaciones Practicas</h4>
+                    <p>Para prediccion de criptomonedas a corto y mediano plazo, los modelos estadisticos clasicos pueden ser mas robustos y confiables que arquitecturas complejas de deep learning.</p>
+                </div>
+                <div class="conclusion-item">
+                    <h4>Trabajo Futuro</h4>
+                    <p>Explorar modelos hibridos, incorporar variables exogenas (sentimiento, on-chain metrics), y evaluar en periodos de mercado alcista vs. bajista.</p>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h3>Mejor Modelo: SARIMA</h3>
+                <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; margin-top: 1rem;">
+                    <div>
+                        <span style="font-size: 2rem; color: var(--success);">$818</span>
+                        <br><small>RMSE 7 dias</small>
+                    </div>
+                    <div>
+                        <span style="font-size: 2rem; color: var(--success);">$721</span>
+                        <br><small>RMSE 14 dias</small>
+                    </div>
+                    <div>
+                        <span style="font-size: 2rem; color: var(--success);">$3,182</span>
+                        <br><small>RMSE 30 dias</small>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; text-align: center;">
+                <p style="color: var(--uba-gold); font-size: 1.2rem;">Universidad de Buenos Aires - Maestria en Inteligencia Artificial</p>
+                <p style="color: rgba(255,255,255,0.6);">Series de Tiempo II - 2024</p>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Navigation
+        const slides = document.querySelectorAll('.slide');
+        const navDots = document.querySelectorAll('.nav-dot');
+        const progressBar = document.getElementById('progressBar');
+        const container = document.getElementById('slideContainer');
+
+        function updateProgress() {
+            const scrollTop = container.scrollTop;
+            const scrollHeight = container.scrollHeight - container.clientHeight;
+            const progress = (scrollTop / scrollHeight) * 100;
+            progressBar.style.width = progress + '%';
+
+            // Update nav dots
+            const slideHeight = container.clientHeight;
+            const currentSlide = Math.round(scrollTop / slideHeight);
+            navDots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        container.addEventListener('scroll', updateProgress);
+
+        navDots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                const slideIndex = parseInt(dot.dataset.slide);
+                slides[slideIndex].scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // Chart
+        const ctx = document.getElementById('comparisonChart');
+        if (ctx) {
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['SARIMA', 'ARIMA', 'LSTM', 'Informer', 'Transformer'],
+                    datasets: [
+                        {
+                            label: '7 dias',
+                            data: [818.40, 839.75, 6798.05, 6091.82, 8741.63],
+                            backgroundColor: 'rgba(76, 201, 240, 0.8)',
+                            borderColor: 'rgba(76, 201, 240, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '14 dias',
+                            data: [721.32, 744.07, 5029.12, 5895.89, 8328.82],
+                            backgroundColor: 'rgba(201, 162, 39, 0.8)',
+                            borderColor: 'rgba(201, 162, 39, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '30 dias',
+                            data: [3181.76, 3446.22, 5633.57, 7413.11, 8787.45],
+                            backgroundColor: 'rgba(6, 214, 160, 0.8)',
+                            borderColor: 'rgba(6, 214, 160, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#f0f0f0',
+                                font: { size: 14 }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'RMSE por Modelo y Horizonte de Prediccion',
+                            color: '#c9a227',
+                            font: { size: 18, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: {
+                                color: '#f0f0f0',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'RMSE (USD)',
+                                color: '#f0f0f0'
+                            }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#f0f0f0' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const slideHeight = container.clientHeight;
+            const currentSlide = Math.round(container.scrollTop / slideHeight);
+
+            if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                if (currentSlide < slides.length - 1) {
+                    slides[currentSlide + 1].scrollIntoView({ behavior: 'smooth' });
+                }
+            } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+                e.preventDefault();
+                if (currentSlide > 0) {
+                    slides[currentSlide - 1].scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
