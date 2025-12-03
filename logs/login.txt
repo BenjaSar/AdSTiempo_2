@@ -30,3 +30,5 @@
 2025-12-03 14:55:31 - src.etl - INFO - ✅ Created 13 features
 2025-12-03 15:00:41 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
 2025-12-03 15:00:44 - src.etl - INFO - ✅ Created 13 features
+2025-12-03 16:57:04 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-03 16:57:06 - src.etl - INFO - ✅ Created 13 features
