@@ -443,34 +443,6 @@ class Informer(nn.Module):
 
 
 # # ============================================================================
-# # PYTORCH DATASET
-# # ============================================================================
-
-# class InformerDataset(Dataset):
-#     """Dataset for Informer"""
-    
-#     def __init__(self, data, seq_len, label_len, pred_len):
-#         self.data = data
-#         self.seq_len = seq_len
-#         self.label_len = label_len
-#         self.pred_len = pred_len
-        
-#     def __len__(self):
-#         return len(self.data) - self.seq_len - self.pred_len + 1
-    
-#     def __getitem__(self, idx):
-#         s_begin = idx
-#         s_end = s_begin + self.seq_len
-#         r_begin = s_end - self.label_len
-#         r_end = r_begin + self.label_len + self.pred_len
-        
-#         seq_x = self.data[s_begin:s_end]
-#         seq_y = self.data[r_begin:r_end]
-        
-#         return torch.FloatTensor(seq_x), torch.FloatTensor(seq_y)
-
-
-# # ============================================================================
 # # TRAINER
 # # ============================================================================
 
@@ -568,6 +540,129 @@ class Informer(nn.Module):
 #         print(f"✅ Training completed! Best val loss: {self.best_val_loss:.6f}\n")
         
 #         return train_losses, val_losses
+
+# ============================================================================
+# IMPROVED TRAINER (same as transformer improved)
+# ============================================================================
+
+class ImprovedInformerTrainer:
+    """Enhanced training with Huber loss and better scheduling"""
+    
+    def __init__(self, model, device, learning_rate=0.001, warmup_epochs=5):
+        self.model = model.to(device)
+        self.device = device
+        self.criterion = nn.HuberLoss(delta=1.0)
+        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
+                                     weight_decay=1e-5)
+        
+        self.warmup_epochs = warmup_epochs
+        self.base_lr = learning_rate
+        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=50, eta_min=learning_rate/10
+        )
+        self.best_val_loss = float('inf')
+        self.epoch = 0
+        
+    def _adjust_learning_rate(self):
+        """Warmup learning rate for first few epochs"""
+        if self.epoch < self.warmup_epochs:
+            lr = self.base_lr * (self.epoch + 1) / self.warmup_epochs
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = lr
+    
+    def train_epoch(self, train_loader):
+        self.model.train()
+        total_loss = 0
+        
+        for x_enc, x_dec, target, _ in train_loader:
+            x_enc = x_enc.to(self.device)
+            x_dec = x_dec.to(self.device)
+            target = target.to(self.device)
+            
+            self.optimizer.zero_grad()
+            output = self.model(x_enc, x_dec)
+            output = output.squeeze(-1)  # Remove last dimension: (batch, pred_len, 1) -> (batch, pred_len)
+            loss = self.criterion(output, target)
+            loss.backward()
+            
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            
+            self.optimizer.step()
+            total_loss += loss.item()
+            
+        return total_loss / len(train_loader)
+    
+    def validate(self, val_loader):
+        self.model.eval()
+        total_loss = 0
+        
+        with torch.no_grad():
+            for x_enc, x_dec, target, _ in val_loader:
+                x_enc = x_enc.to(self.device)
+                x_dec = x_dec.to(self.device)
+                target = target.to(self.device)
+                output = self.model(x_enc, x_dec)
+                output = output.squeeze(-1)  # Remove last dimension: (batch, pred_len, 1) -> (batch, pred_len)
+                loss = self.criterion(output, target)
+                total_loss += loss.item()
+                
+        return total_loss / len(val_loader)
+    
+    def fit(self, train_loader, val_loader, epochs, patience=30):
+        """Train with warmup and cosine annealing - with improved patience"""
+        print_box("\nTRAINING (IMPROVED)")
+        
+        print(f"🚀 Training Informer with Huber loss and learning rate scheduling")
+        print(f"   Device: {self.device}")
+        print(f"   Warmup epochs: {self.warmup_epochs}")
+        print(f"   Total epochs: {epochs}")
+        print(f"   Patience: {patience}\n")
+        print("─" * 81)
+        
+        train_losses, val_losses = [], []
+        patience_counter = 0
+        val_loss_threshold = 1e-6  # Minimum improvement threshold
+        
+        for epoch in range(epochs):
+            self.epoch = epoch
+            self._adjust_learning_rate()
+            
+            train_loss = self.train_epoch(train_loader)
+            val_loss = self.validate(val_loader)
+            
+            train_losses.append(train_loss)
+            val_losses.append(val_loss)
+            
+            if epoch >= self.warmup_epochs:
+                self.scheduler.step()
+            
+            current_lr = self.optimizer.param_groups[0]['lr']
+            
+            # Check if validation loss improved by minimum threshold
+            if val_loss < self.best_val_loss - val_loss_threshold:
+                self.best_val_loss = val_loss
+                torch.save(self.model.state_dict(), 'models/informer/best_informer_model.pth')
+                patience_counter = 0
+                status = "✅"
+            else:
+                patience_counter += 1
+                status = f"⏳ ({patience_counter}/{patience})"
+            
+            if (epoch + 1) % 5 == 0 or epoch == 0 or epoch == epochs - 1:
+                print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
+                      f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} │ "
+                      f"LR: {current_lr:.2e} │ {status}")
+            
+            if patience_counter >= patience:
+                print(f"\n⚠️  Early stopping at epoch {epoch+1}")
+                break
+        
+        print("─" * 81)
+        print(f"✅ Training completed!")
+        print(f"   Best validation loss: {self.best_val_loss:.6f}")
+        
+        return train_losses, val_losses
 
 
 # # ============================================================================
@@ -692,167 +787,6 @@ class Informer(nn.Module):
 #         plt.savefig(save_path, dpi=300, bbox_inches='tight')
 #         print(f"   ✅ Saved: {save_path}")
 #         plt.close()
-
-
-
-# ============================================================================
-# IMPROVED DATASET (same as transformer improved)
-# ============================================================================
-
-class InformerReturnsDataset(Dataset):
-    """Dataset for Informer with returns-based forecasting"""
-    
-    def __init__(self, features, prices, seq_len, label_len, pred_len):
-        self.features = features
-        self.prices = prices
-        self.seq_len = seq_len
-        self.label_len = label_len
-        self.pred_len = pred_len
-        
-    def __len__(self):
-        return len(self.features) - self.seq_len - self.pred_len + 1
-    
-    def __getitem__(self, idx):
-        # Input encoder: feature sequence
-        x_enc = self.features[idx:idx + self.seq_len]
-        
-        # Input decoder: starts with label_len from end of encoder, then zeros
-        x_dec_start = self.features[idx + self.seq_len - self.label_len:idx + self.seq_len]
-        x_dec_zeros = np.zeros((self.pred_len, self.features.shape[1]))
-        x_dec = np.vstack([x_dec_start, x_dec_zeros])
-        
-        # Target: future returns (first feature column)
-        y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
-        
-        # Last price for reconstruction
-        last_price = self.prices[idx + self.seq_len - 1]
-        
-        return (torch.FloatTensor(x_enc), 
-                torch.FloatTensor(x_dec),
-                torch.FloatTensor(y),
-                torch.FloatTensor([last_price]))
-
-
-# ============================================================================
-# IMPROVED TRAINER (same as transformer improved)
-# ============================================================================
-
-class ImprovedInformerTrainer:
-    """Enhanced training with Huber loss and better scheduling"""
-    
-    def __init__(self, model, device, learning_rate=0.001, warmup_epochs=5):
-        self.model = model.to(device)
-        self.device = device
-        self.criterion = nn.HuberLoss(delta=1.0)
-        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
-                                     weight_decay=1e-5)
-        
-        self.warmup_epochs = warmup_epochs
-        self.base_lr = learning_rate
-        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            self.optimizer, T_max=50, eta_min=learning_rate/10
-        )
-        self.best_val_loss = float('inf')
-        self.epoch = 0
-        
-    def _adjust_learning_rate(self):
-        """Warmup learning rate for first few epochs"""
-        if self.epoch < self.warmup_epochs:
-            lr = self.base_lr * (self.epoch + 1) / self.warmup_epochs
-            for param_group in self.optimizer.param_groups:
-                param_group['lr'] = lr
-    
-    def train_epoch(self, train_loader):
-        self.model.train()
-        total_loss = 0
-        
-        for x_enc, x_dec, target, _ in train_loader:
-            x_enc = x_enc.to(self.device)
-            x_dec = x_dec.to(self.device)
-            target = target.to(self.device)
-            
-            self.optimizer.zero_grad()
-            output = self.model(x_enc, x_dec)
-            output = output.squeeze(-1)  # Remove last dimension: (batch, pred_len, 1) -> (batch, pred_len)
-            loss = self.criterion(output, target)
-            loss.backward()
-            
-            # Gradient clipping
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-            
-            self.optimizer.step()
-            total_loss += loss.item()
-            
-        return total_loss / len(train_loader)
-    
-    def validate(self, val_loader):
-        self.model.eval()
-        total_loss = 0
-        
-        with torch.no_grad():
-            for x_enc, x_dec, target, _ in val_loader:
-                x_enc = x_enc.to(self.device)
-                x_dec = x_dec.to(self.device)
-                target = target.to(self.device)
-                output = self.model(x_enc, x_dec)
-                output = output.squeeze(-1)  # Remove last dimension: (batch, pred_len, 1) -> (batch, pred_len)
-                loss = self.criterion(output, target)
-                total_loss += loss.item()
-                
-        return total_loss / len(val_loader)
-    
-    def fit(self, train_loader, val_loader, epochs, patience=15):
-        """Train with warmup and cosine annealing"""
-        print_box("\nTRAINING (IMPROVED)")
-        
-        print(f"🚀 Training Informer with Huber loss and learning rate scheduling")
-        print(f"   Device: {self.device}")
-        print(f"   Warmup epochs: {self.warmup_epochs}")
-        print(f"   Total epochs: {epochs}\n")
-        print("─" * 81)
-        
-        train_losses, val_losses = [], []
-        patience_counter = 0
-        
-        for epoch in range(epochs):
-            self.epoch = epoch
-            self._adjust_learning_rate()
-            
-            train_loss = self.train_epoch(train_loader)
-            val_loss = self.validate(val_loader)
-            
-            train_losses.append(train_loss)
-            val_losses.append(val_loss)
-            
-            if epoch >= self.warmup_epochs:
-                self.scheduler.step()
-            
-            current_lr = self.optimizer.param_groups[0]['lr']
-            
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'models/informer/best_informer_model.pth')
-                patience_counter = 0
-                status = "✅"
-            else:
-                patience_counter += 1
-                status = f"⏳ ({patience_counter}/{patience})"
-            
-            if (epoch + 1) % 5 == 0 or epoch == 0:
-                print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
-                      f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} │ "
-                      f"LR: {current_lr:.2e} │ {status}")
-            
-            if patience_counter >= patience:
-                print(f"\n⚠️  Early stopping at epoch {epoch+1}")
-                break
-        
-        print("─" * 81)
-        print(f"✅ Training completed!")
-        print(f"   Best validation loss: {self.best_val_loss:.6f}")
-        
-        return train_losses, val_losses
-
 
 # ============================================================================
 # IMPROVED EVALUATION (same as transformer improved)

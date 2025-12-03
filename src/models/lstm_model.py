@@ -134,8 +134,8 @@ class ModelTrainer:
                 
         return total_loss / len(val_loader)
     
-    def fit(self, train_loader, val_loader, epochs, patience=10):
-        """Train the model"""
+    def fit(self, train_loader, val_loader, epochs, patience=30):
+        """Train the model - with improved patience"""
         print_box("\nMODEL TRAINING")
 
         train_losses = []
@@ -144,8 +144,8 @@ class ModelTrainer:
         
         print(f"🚀 Training started with {sum(p.numel() for p in self.model.parameters()):,} parameters")
         print(f"   Device: {self.device}")
-        print(f"   Epochs: {epochs}")
-        print(f"   Early stopping patience: {patience}\n")
+        print(f"   Total epochs: {epochs}")
+        print(f"   Patience: {patience}\n")
         print("─" * 81)
         
         for epoch in range(epochs):
@@ -167,7 +167,7 @@ class ModelTrainer:
                 patience_counter += 1
                 status = f"⏳ (patience: {patience_counter}/{patience})"
             
-            if (epoch + 1) % 5 == 0 or epoch == 0:
+            if (epoch + 1) % 5 == 0 or epoch == 0 or epoch == epochs - 1:
                 print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
                       f"Train Loss: {train_loss:.6f} │ "
                       f"Val Loss: {val_loss:.6f} │ {status}")

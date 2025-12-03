@@ -129,6 +129,36 @@ class Transformer(nn.Module):
 
 
 # # ============================================================================
+# # IMPROVED DATASET WITH RETURNS
+# # ============================================================================
+
+# class ReturnsDataset(Dataset):
+#     """Dataset for returns-based forecasting"""
+    
+#     def __init__(self, features, prices, seq_len, pred_len):
+#         self.features = features
+#         self.prices = prices
+#         self.seq_len = seq_len
+#         self.pred_len = pred_len
+        
+#     def __len__(self):
+#         return len(self.features) - self.seq_len - self.pred_len + 1
+    
+#     def __getitem__(self, idx):
+#         # Input: feature sequence
+#         x = self.features[idx:idx + self.seq_len]
+        
+#         # Target: future returns (first feature column)
+#         y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
+        
+#         # Also return last price for reconstruction
+#         last_price = self.prices[idx + self.seq_len - 1]
+        
+#         return (torch.FloatTensor(x), 
+#                 torch.FloatTensor(y),
+#                 torch.FloatTensor([last_price]))
+
+# # ============================================================================
 # # TRAINER
 # # ============================================================================
 
@@ -261,6 +291,124 @@ class Transformer(nn.Module):
 #         plt.savefig('models/transformer/results/03_training_history.png', dpi=300, bbox_inches='tight')
 #         print("   ✅ Saved: 03_training_history.png\n")
 #         plt.close()
+
+# ============================================================================
+# IMPROVED TRAINER WITH HUBER LOSS
+# ============================================================================
+
+class ImprovedTrainer:
+    """Enhanced training with Huber loss and better scheduling"""
+    
+    def __init__(self, model, device, learning_rate=0.001, warmup_epochs=5):
+        self.model = model.to(device)
+        self.device = device
+        self.criterion = nn.HuberLoss(delta=1.0)  # More robust than MSE
+        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
+                                     weight_decay=1e-5)
+        
+        # Learning rate scheduler with warmup
+        self.warmup_epochs = warmup_epochs
+        self.base_lr = learning_rate
+        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=50, eta_min=learning_rate/10
+        )
+        self.best_val_loss = float('inf')
+        self.epoch = 0
+        
+    def _adjust_learning_rate(self):
+        """Warmup learning rate for first few epochs"""
+        if self.epoch < self.warmup_epochs:
+            lr = self.base_lr * (self.epoch + 1) / self.warmup_epochs
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = lr
+    
+    def train_epoch(self, train_loader):
+        self.model.train()
+        total_loss = 0
+        
+        for batch_x, batch_y, _ in train_loader:
+            batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+            
+            self.optimizer.zero_grad()
+            output = self.model(batch_x)
+            loss = self.criterion(output, batch_y)
+            loss.backward()
+            
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            
+            self.optimizer.step()
+            total_loss += loss.item()
+            
+        return total_loss / len(train_loader)
+    
+    def validate(self, val_loader):
+        self.model.eval()
+        total_loss = 0
+        
+        with torch.no_grad():
+            for batch_x, batch_y, _ in val_loader:
+                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
+                output = self.model(batch_x)
+                loss = self.criterion(output, batch_y)
+                total_loss += loss.item()
+                
+        return total_loss / len(val_loader)
+    
+    def fit(self, train_loader, val_loader, epochs, patience=30):
+        """Train with warmup and cosine annealing - with improved patience"""
+        print_box("\nTRAINING (IMPROVED)")
+
+        print(f"🚀 Training with Huber loss and learning rate scheduling")
+        print(f"   Device: {self.device}")
+        print(f"   Warmup epochs: {self.warmup_epochs}")
+        print(f"   Total epochs: {epochs}")
+        print(f"   Patience: {patience}\n")
+        print("─" * 81)
+        
+        train_losses, val_losses = [], []
+        patience_counter = 0
+        val_loss_threshold = 1e-6  # Minimum improvement threshold
+        
+        for epoch in range(epochs):
+            self.epoch = epoch
+            self._adjust_learning_rate()
+            
+            train_loss = self.train_epoch(train_loader)
+            val_loss = self.validate(val_loader)
+            
+            train_losses.append(train_loss)
+            val_losses.append(val_loss)
+            
+            if epoch >= self.warmup_epochs:
+                self.scheduler.step()
+            
+            current_lr = self.optimizer.param_groups[0]['lr']
+
+            # Check if validation loss improved by minimum threshold
+            if val_loss < self.best_val_loss - val_loss_threshold:
+                self.best_val_loss = val_loss
+                torch.save(self.model.state_dict(), 'models/transformer/best_transformer_model.pth')
+                patience_counter = 0
+                status = "✅"
+            else:
+                patience_counter += 1
+                status = f"⏳ ({patience_counter}/{patience})"
+            
+            if (epoch + 1) % 5 == 0 or epoch == 0 or epoch == epochs - 1:
+                print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
+                      f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} │ "
+                      f"LR: {current_lr:.2e} │ {status}")
+            
+            if patience_counter >= patience:
+                print(f"\n⚠️  Early stopping at epoch {epoch+1}")
+                break
+        
+        print("─" * 81)
+        print(f"✅ Training completed!")
+        print(f"   Best validation loss: {self.best_val_loss:.6f}")
+        
+        return train_losses, val_losses
 
 
 # # ============================================================================
@@ -475,271 +623,6 @@ class Transformer(nn.Module):
 #         plt.savefig(save_path, dpi=300, bbox_inches='tight')
 #         print(f"   ✅ Saved: {save_path}")
 #         plt.close()
-
-
-# ============================================================================
-# FUTURE FORECASTING
-# ============================================================================
-
-class FutureForecaster:
-    """Generate future forecasts"""
-    
-    @staticmethod
-    def forecast_recursive(model, last_sequence, scaler, close_idx, 
-                          n_days=30, device='cpu'):
-        """
-        Recursive forecasting: predict one step, use it for next prediction
-        """
-        print_box("\nFUTURE FORECASTING")
-        print(f"🔮 Generating {n_days}-day forecast...")
-        
-        model.eval()
-        forecasts = []
-        current_seq = torch.FloatTensor(last_sequence).unsqueeze(0).to(device)
-        
-        with torch.no_grad():
-            for day in range(n_days):
-                # Predict next step
-                pred = model(current_seq)
-                next_val_scaled = pred[0, 0].item()
-                
-                # Inverse transform to get actual price
-                dummy = np.zeros((1, scaler.n_features_in_))
-                dummy[0, close_idx] = next_val_scaled
-                next_val_actual = scaler.inverse_transform(dummy)[0, close_idx]
-                forecasts.append(next_val_actual)
-                
-                # Update sequence
-                new_features = np.zeros((1, scaler.n_features_in_))
-                new_features[0, close_idx] = next_val_scaled
-                
-                current_seq = torch.cat([
-                    current_seq[:, 1:, :],
-                    torch.FloatTensor(new_features).unsqueeze(0).to(device)
-                ], dim=1)
-        
-        forecasts = np.array(forecasts)
-        
-        print(f"   ✅ Forecast complete\n")
-        print("📊 FORECAST SUMMARY")
-        print("─" * 80)
-        print(f"Next day price:    ${forecasts[0]:,.2f}")
-        print(f"7-day price:       ${forecasts[6]:,.2f}")
-        print(f"14-day price:      ${forecasts[13]:,.2f}")
-        print(f"30-day price:      ${forecasts[-1]:,.2f}")
-        print(f"Expected return:   {((forecasts[-1] / forecasts[0] - 1) * 100):.2f}%")
-        print("─" * 80 + "\n")
-        
-        return forecasts
-    
-    @staticmethod
-    def plot_forecast(historical_data, historical_dates, forecasts, 
-                     forecast_dates, save_path='models/transformer/results/06_future_forecast.png'):
-        """Visualize future forecast"""
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 12))
-        
-        # Full view
-        ax1.plot(historical_dates, historical_data, label='Historical Data', 
-                linewidth=2, color='#2E86AB', alpha=0.8)
-        ax1.plot(forecast_dates, forecasts, label='Forecast', 
-                linewidth=2.5, color='#F18F01', linestyle='--', marker='o', 
-                markersize=4, alpha=0.9)
-        
-        # Confidence interval (±2σ based on recent volatility)
-        recent_returns = np.diff(historical_data[-60:]) / historical_data[-60:-1]
-        std = np.std(recent_returns) * historical_data[-1]
-        expanding_std = std * np.sqrt(np.arange(1, len(forecasts) + 1))
-        
-        ax1.fill_between(forecast_dates, 
-                        forecasts - 2*expanding_std, 
-                        forecasts + 2*expanding_std, 
-                        alpha=0.2, color='#F18F01', 
-                        label='95% Confidence Interval')
-        
-        ax1.axvline(historical_dates[-1], color='green', linestyle=':', 
-                   linewidth=2, label='Forecast Start', alpha=0.7)
-        ax1.set_xlabel('Date', fontsize=12)
-        ax1.set_ylabel('Bitcoin Price (USD)', fontsize=12)
-        ax1.set_title('Bitcoin Price Forecast - Full View', 
-                     fontsize=14, fontweight='bold')
-        ax1.legend(fontsize=11)
-        ax1.grid(True, alpha=0.3)
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(
-            lambda x, p: f'${x:,.0f}'))
-        
-        # Zoomed view (last 90 days + forecast)
-        zoom_days = 90
-        ax2.plot(historical_dates[-zoom_days:], historical_data[-zoom_days:], 
-                label='Historical Data', linewidth=2, color='#2E86AB', alpha=0.8)
-        ax2.plot(forecast_dates, forecasts, label='Forecast', 
-                linewidth=2.5, color='#F18F01', linestyle='--', marker='o', 
-                markersize=4, alpha=0.9)
-        ax2.fill_between(forecast_dates, 
-                        forecasts - 2*expanding_std, 
-                        forecasts + 2*expanding_std, 
-                        alpha=0.2, color='#F18F01')
-        ax2.axvline(historical_dates[-1], color='green', linestyle=':', 
-                   linewidth=2, alpha=0.7)
-        ax2.set_xlabel('Date', fontsize=12)
-        ax2.set_ylabel('Bitcoin Price (USD)', fontsize=12)
-        ax2.set_title('Bitcoin Price Forecast - Recent 90 Days + Forecast', 
-                     fontsize=14, fontweight='bold')
-        ax2.legend(fontsize=11)
-        ax2.grid(True, alpha=0.3)
-        ax2.yaxis.set_major_formatter(plt.FuncFormatter(
-            lambda x, p: f'${x:,.0f}'))
-        
-        plt.tight_layout()
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"   ✅ Saved: {save_path}")
-        plt.close()
-
-
-# # ============================================================================
-# # IMPROVED DATASET WITH RETURNS
-# # ============================================================================
-
-# class ReturnsDataset(Dataset):
-#     """Dataset for returns-based forecasting"""
-    
-#     def __init__(self, features, prices, seq_len, pred_len):
-#         self.features = features
-#         self.prices = prices
-#         self.seq_len = seq_len
-#         self.pred_len = pred_len
-        
-#     def __len__(self):
-#         return len(self.features) - self.seq_len - self.pred_len + 1
-    
-#     def __getitem__(self, idx):
-#         # Input: feature sequence
-#         x = self.features[idx:idx + self.seq_len]
-        
-#         # Target: future returns (first feature column)
-#         y = self.features[idx + self.seq_len:idx + self.seq_len + self.pred_len, 0]
-        
-#         # Also return last price for reconstruction
-#         last_price = self.prices[idx + self.seq_len - 1]
-        
-#         return (torch.FloatTensor(x), 
-#                 torch.FloatTensor(y),
-#                 torch.FloatTensor([last_price]))
-
-# ============================================================================
-# IMPROVED TRAINER WITH HUBER LOSS
-# ============================================================================
-
-class ImprovedTrainer:
-    """Enhanced training with Huber loss and better scheduling"""
-    
-    def __init__(self, model, device, learning_rate=0.001, warmup_epochs=5):
-        self.model = model.to(device)
-        self.device = device
-        self.criterion = nn.HuberLoss(delta=1.0)  # More robust than MSE
-        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate, 
-                                     weight_decay=1e-5)
-        
-        # Learning rate scheduler with warmup
-        self.warmup_epochs = warmup_epochs
-        self.base_lr = learning_rate
-        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            self.optimizer, T_max=50, eta_min=learning_rate/10
-        )
-        self.best_val_loss = float('inf')
-        self.epoch = 0
-        
-    def _adjust_learning_rate(self):
-        """Warmup learning rate for first few epochs"""
-        if self.epoch < self.warmup_epochs:
-            lr = self.base_lr * (self.epoch + 1) / self.warmup_epochs
-            for param_group in self.optimizer.param_groups:
-                param_group['lr'] = lr
-    
-    def train_epoch(self, train_loader):
-        self.model.train()
-        total_loss = 0
-        
-        for batch_x, batch_y, _ in train_loader:
-            batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-            
-            self.optimizer.zero_grad()
-            output = self.model(batch_x)
-            loss = self.criterion(output, batch_y)
-            loss.backward()
-            
-            # Gradient clipping
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-            
-            self.optimizer.step()
-            total_loss += loss.item()
-            
-        return total_loss / len(train_loader)
-    
-    def validate(self, val_loader):
-        self.model.eval()
-        total_loss = 0
-        
-        with torch.no_grad():
-            for batch_x, batch_y, _ in val_loader:
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                output = self.model(batch_x)
-                loss = self.criterion(output, batch_y)
-                total_loss += loss.item()
-                
-        return total_loss / len(val_loader)
-    
-    def fit(self, train_loader, val_loader, epochs, patience=15):
-        """Train with warmup and cosine annealing"""
-        print_box("\nTRAINING (IMPROVED)")
-
-        print(f"🚀 Training with Huber loss and learning rate scheduling")
-        print(f"   Device: {self.device}")
-        print(f"   Warmup epochs: {self.warmup_epochs}")
-        print(f"   Total epochs: {epochs}\n")
-        print("─" * 81)
-        
-        train_losses, val_losses = [], []
-        patience_counter = 0
-        
-        for epoch in range(epochs):
-            self.epoch = epoch
-            self._adjust_learning_rate()
-            
-            train_loss = self.train_epoch(train_loader)
-            val_loss = self.validate(val_loader)
-            
-            train_losses.append(train_loss)
-            val_losses.append(val_loss)
-            
-            if epoch >= self.warmup_epochs:
-                self.scheduler.step()
-            
-            current_lr = self.optimizer.param_groups[0]['lr']
-            
-            if val_loss < self.best_val_loss:
-                self.best_val_loss = val_loss
-                torch.save(self.model.state_dict(), 'models/transformer/best_transformer_model.pth')
-                patience_counter = 0
-                status = "✅"
-            else:
-                patience_counter += 1
-                status = f"⏳ ({patience_counter}/{patience})"
-            
-            if (epoch + 1) % 5 == 0 or epoch == 0:
-                print(f"Epoch [{epoch+1:3d}/{epochs}] │ "
-                      f"Train: {train_loss:.6f} │ Val: {val_loss:.6f} │ "
-                      f"LR: {current_lr:.2e} │ {status}")
-            
-            if patience_counter >= patience:
-                print(f"\n⚠️  Early stopping at epoch {epoch+1}")
-                break
-        
-        print("─" * 81)
-        print(f"✅ Training completed!")
-        print(f"   Best validation loss: {self.best_val_loss:.6f}")
-        
-        return train_losses, val_losses
-
 
 # ============================================================================
 # IMPROVED EVALUATION
@@ -995,6 +878,125 @@ class ImprovedEvaluator:
         print(f"   ✅ Saved: {save_path}")
         plt.close()
 
+
+# ============================================================================
+# FUTURE FORECASTING
+# ============================================================================
+
+class FutureForecaster:
+    """Generate future forecasts"""
+    
+    @staticmethod
+    def forecast_recursive(model, last_sequence, scaler, close_idx, 
+                          n_days=30, device='cpu'):
+        """
+        Recursive forecasting: predict one step, use it for next prediction
+        """
+        print_box("\nFUTURE FORECASTING")
+        print(f"🔮 Generating {n_days}-day forecast...")
+        
+        model.eval()
+        forecasts = []
+        current_seq = torch.FloatTensor(last_sequence).unsqueeze(0).to(device)
+        
+        with torch.no_grad():
+            for day in range(n_days):
+                # Predict next step
+                pred = model(current_seq)
+                next_val_scaled = pred[0, 0].item()
+                
+                # Inverse transform to get actual price
+                dummy = np.zeros((1, scaler.n_features_in_))
+                dummy[0, close_idx] = next_val_scaled
+                next_val_actual = scaler.inverse_transform(dummy)[0, close_idx]
+                forecasts.append(next_val_actual)
+                
+                # Update sequence
+                new_features = np.zeros((1, scaler.n_features_in_))
+                new_features[0, close_idx] = next_val_scaled
+                
+                current_seq = torch.cat([
+                    current_seq[:, 1:, :],
+                    torch.FloatTensor(new_features).unsqueeze(0).to(device)
+                ], dim=1)
+        
+        forecasts = np.array(forecasts)
+        
+        print(f"   ✅ Forecast complete\n")
+        print("📊 FORECAST SUMMARY")
+        print("─" * 80)
+        print(f"Next day price:    ${forecasts[0]:,.2f}")
+        print(f"7-day price:       ${forecasts[6]:,.2f}")
+        print(f"14-day price:      ${forecasts[13]:,.2f}")
+        print(f"30-day price:      ${forecasts[-1]:,.2f}")
+        print(f"Expected return:   {((forecasts[-1] / forecasts[0] - 1) * 100):.2f}%")
+        print("─" * 80 + "\n")
+        
+        return forecasts
+    
+    @staticmethod
+    def plot_forecast(historical_data, historical_dates, forecasts, 
+                     forecast_dates, save_path='models/transformer/results/06_future_forecast.png'):
+        """Visualize future forecast"""
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 12))
+        
+        # Full view
+        ax1.plot(historical_dates, historical_data, label='Historical Data', 
+                linewidth=2, color='#2E86AB', alpha=0.8)
+        ax1.plot(forecast_dates, forecasts, label='Forecast', 
+                linewidth=2.5, color='#F18F01', linestyle='--', marker='o', 
+                markersize=4, alpha=0.9)
+        
+        # Confidence interval (±2σ based on recent volatility)
+        recent_returns = np.diff(historical_data[-60:]) / historical_data[-60:-1]
+        std = np.std(recent_returns) * historical_data[-1]
+        expanding_std = std * np.sqrt(np.arange(1, len(forecasts) + 1))
+        
+        ax1.fill_between(forecast_dates, 
+                        forecasts - 2*expanding_std, 
+                        forecasts + 2*expanding_std, 
+                        alpha=0.2, color='#F18F01', 
+                        label='95% Confidence Interval')
+        
+        ax1.axvline(historical_dates[-1], color='green', linestyle=':', 
+                   linewidth=2, label='Forecast Start', alpha=0.7)
+        ax1.set_xlabel('Date', fontsize=12)
+        ax1.set_ylabel('Bitcoin Price (USD)', fontsize=12)
+        ax1.set_title('Bitcoin Price Forecast - Full View', 
+                     fontsize=14, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        ax1.yaxis.set_major_formatter(plt.FuncFormatter(
+            lambda x, p: f'${x:,.0f}'))
+        
+        # Zoomed view (last 90 days + forecast)
+        zoom_days = 90
+        ax2.plot(historical_dates[-zoom_days:], historical_data[-zoom_days:], 
+                label='Historical Data', linewidth=2, color='#2E86AB', alpha=0.8)
+        ax2.plot(forecast_dates, forecasts, label='Forecast', 
+                linewidth=2.5, color='#F18F01', linestyle='--', marker='o', 
+                markersize=4, alpha=0.9)
+        ax2.fill_between(forecast_dates, 
+                        forecasts - 2*expanding_std, 
+                        forecasts + 2*expanding_std, 
+                        alpha=0.2, color='#F18F01')
+        ax2.axvline(historical_dates[-1], color='green', linestyle=':', 
+                   linewidth=2, alpha=0.7)
+        ax2.set_xlabel('Date', fontsize=12)
+        ax2.set_ylabel('Bitcoin Price (USD)', fontsize=12)
+        ax2.set_title('Bitcoin Price Forecast - Recent 90 Days + Forecast', 
+                     fontsize=14, fontweight='bold')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        ax2.yaxis.set_major_formatter(plt.FuncFormatter(
+            lambda x, p: f'${x:,.0f}'))
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {save_path}")
+        plt.close()
+
+
 # ============================================================================
 # ADVANCED FEATURE IMPORTANCE ANALYSIS (OPTIONAL)
 # ============================================================================
@@ -1010,9 +1012,7 @@ class FeatureImportance:
         
         Note: This is computationally expensive. Using subset of data.
         """
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                    BONUS: FEATURE IMPORTANCE ANALYSIS                         ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
+        print_box("\nBONUS: FEATURE IMPORTANCE ANALYSIS")
         
         print(f"🔬 Calculating feature importance (this may take a while)...")
         print(f"   Using {n_repeats} permutations per feature")
@@ -1126,10 +1126,8 @@ class RiskAnalyzer:
     @staticmethod
     def analyze_risk(forecasts, current_price, historical_returns):
         """Calculate risk metrics"""
-        print("╔═══════════════════════════════════════════════════════════════════════════════╗")
-        print("║                        BONUS: RISK ANALYSIS                                   ║")
-        print("╚═══════════════════════════════════════════════════════════════════════════════╝\n")
-        
+        print_box("\nBONUS: RISK ANALYSIS")
+
         # Calculate metrics
         expected_return = (forecasts[-1] / current_price - 1) * 100
         forecast_returns = np.diff(forecasts) / forecasts[:-1]
