@@ -176,7 +176,7 @@ class BitcoinEDA:
     def run_full_eda(self):
         """Execute complete EDA pipeline"""
         print_box("\nEXPLORATORY DATA ANALYSIS (EDA)")
-        
+        logger.info(f"✅ RUNNING FULL EDA ON {'REAL' if self.is_real_data else 'SYNTHETIC'} DATA")
         os.makedirs(self.output_dir, exist_ok=True) # Create directory if not exists
 
         self._basic_stats()
@@ -479,7 +479,6 @@ class ImprovedFeatureEngineer:
     @staticmethod
     def create_features(df):
         """Create features based on returns"""
-        feature_logger = get_logger(__name__)
         print("🔧 Creating return-based features...")
         
         df = df.copy()
@@ -528,7 +527,8 @@ class ImprovedFeatureEngineer:
         
         print(f"   ✅ Created {len(feature_cols)} features")
         print(f"   ✅ Valid samples: {len(df)}\n")
-        feature_logger.info(f"✅ Created {len(feature_cols)} features")
+        logger.info(f"✅ Created {len(feature_cols)} features")
+        logger.debug(f"Features list: {list(feature_cols)}")
         
         return df[feature_cols], df['Close']
 
