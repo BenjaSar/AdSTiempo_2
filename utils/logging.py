@@ -3,8 +3,11 @@
 import logging
 import colorlog
 import os
+import sys
 
-def get_logger(name=None, log_file='logs/logging.txt'):
+DEBUG = False
+
+def get_logger(name=None, log_file='logs/etl_logging.txt', to_console=DEBUG):
     """Get or create a colored logger instance with file and console output"""
     logger = logging.getLogger(name or 'my_colored_logger')
     
@@ -18,24 +21,24 @@ def get_logger(name=None, log_file='logs/logging.txt'):
             os.makedirs(log_dir)
             print(f"📁 Created logs directory: {log_dir}")
         
-        # Create a ColoredFormatter for console output
-        console_formatter = colorlog.ColoredFormatter(
-            '%(log_color)s%(levelname)s:%(name)s:%(message)s',
-            log_colors={
-                'DEBUG': 'cyan',
-                'INFO': 'green',
-                'WARNING': 'yellow',
-                'ERROR': 'red',
-                'CRITICAL': 'red,bg_white',
-            }
-        )
-        
-        # Create a StreamHandler for console output
-        console_handler = colorlog.StreamHandler()
-        console_handler.setFormatter(console_formatter)
-        logger.addHandler(console_handler)
-        
-        # Create a FileHandler for file output
+        if to_console:
+            # Create a ColoredFormatter for console output (CONDITIONAL)
+            console_formatter = colorlog.ColoredFormatter(
+                '%(log_color)s%(levelname)s:%(name)s:%(message)s',
+                log_colors={
+                    'DEBUG': 'cyan',
+                    'INFO': 'green',
+                    'WARNING': 'yellow',
+                    'ERROR': 'red',
+                    'CRITICAL': 'red,bg_white',
+                }
+            )
+            console_handler = colorlog.StreamHandler(stream=sys.stdout)
+            console_handler.setFormatter(console_formatter)
+            logger.addHandler(console_handler)
+            print(f"📢 Console logging is ACTIVE.")
+
+        # Create a FileHandler for file output (ALWAYS ACTIVE)
         file_formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'

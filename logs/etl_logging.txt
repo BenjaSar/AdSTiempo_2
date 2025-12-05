@@ -40,3 +40,19 @@
 2025-12-03 17:52:31 - src.etl - INFO - ✅ Created 13 features
 2025-12-04 20:57:31 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
 2025-12-04 20:57:40 - src.etl - INFO - ✅ Created 13 features
+2025-12-04 21:20:39 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 21:20:48 - src.etl - INFO - ✅ Created 13 features
+2025-12-04 21:40:42 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 21:40:51 - src.etl - INFO - ✅ Created 13 features
+2025-12-04 21:41:16 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 21:41:23 - src.etl - INFO - ✅ Created 13 features
+2025-12-04 21:46:23 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 21:46:30 - src.etl - INFO - ✅ Created 13 features
+2025-12-04 21:50:10 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 21:50:17 - src.etl - INFO - ✅ Created 13 features
+2025-12-04 21:59:46 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 22:00:00 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 22:00:07 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 22:03:54 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 22:04:15 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-04 22:08:08 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.

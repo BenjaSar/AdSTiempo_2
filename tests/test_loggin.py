@@ -47,7 +47,7 @@ def test_get_logger_initial_setup(clean_logger, tmp_log_file):
     """Test the initial setup of the logger."""
     
     logger_name = clean_logger.name
-    logger = get_logger(name=logger_name, log_file=tmp_log_file)
+    logger = get_logger(name=logger_name, log_file=tmp_log_file, to_console=True)
     
     # 1. Check logger properties
     assert logger.name == logger_name
@@ -108,15 +108,19 @@ def test_logger_writes_to_file(clean_logger, tmp_log_file):
 def test_console_handler_is_colored(clean_logger, tmp_log_file, capsys):
     """Test that the console output is handled by colorlog (implies coloring)."""
     
-    logger = get_logger(name=clean_logger.name, log_file=tmp_log_file)
+    logger = get_logger(name=clean_logger.name, log_file=tmp_log_file, to_console=True)
     
     assert isinstance(logger.handlers[0], colorlog.StreamHandler)
     
     test_message = "Console color test"
+    capsys.readouterr()
     logger.warning(test_message)
     
     captured = capsys.readouterr()
     
     # A common ANSI escape sequence for color is '\x1b['
-    assert '\x1b[' in captured.err or '\x1b[' in captured.out
-    assert test_message in captured.err or test_message in captured.out
+    assert '\x1b[' in captured.out
+    assert test_message in captured.out
+    
+    # Asegúrate de que no haya ruido en err
+    assert captured.err == ""
