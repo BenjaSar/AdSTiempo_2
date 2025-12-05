@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import pytest
-from utils.loggin import get_logger, colorlog
+from utils.logging import get_logger, colorlog
 
 # FIXTURES
 

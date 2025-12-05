@@ -4,7 +4,7 @@ import logging
 import colorlog
 import os
 
-def get_logger(name=None, log_file='logs/login.txt'):
+def get_logger(name=None, log_file='logs/logging.txt'):
     """Get or create a colored logger instance with file and console output"""
     logger = logging.getLogger(name or 'my_colored_logger')
     

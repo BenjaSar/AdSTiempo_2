@@ -21,7 +21,7 @@ from torch.utils.data import Dataset
 OUTPUT_DIR = 'docs/results/' # Default directory to save EDA outputs
 
 # Logging utility
-from utils.loggin import get_logger
+from utils.logging import get_logger
 logger = get_logger(__name__)
 
 # Try to import yfinance for real data
