@@ -354,10 +354,10 @@ if __name__ == "__main__":
         logger.info("✅ ALL ANALYSES COMPLETED SUCCESSFULLY!")
 
     except KeyboardInterrupt:
-        # print("\n\n⚠️  Execution interrupted by user")
+        print("\n\n⚠️  Execution interrupted by user")
         logger.warning("⚠️  Execution interrupted by user")
     except Exception as e:
-        # print(f"\n\n❌ Error occurred: {str(e)}")
+        print(f"\n\n❌ Error occurred: {str(e)}")
         logger.error(f"❌ Critical Error occurred: {str(e)}", exc_info=True)
         # import traceback
         # traceback.print_exc()

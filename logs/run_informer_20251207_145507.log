@@ -1,0 +1,53 @@
+2025-12-07 14:55:09 - BTC_Informer - INFO - ⚙️  STARTING EXPERIMENT WITH CONFIGURATION:
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - use_real_data: True
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - start_date: 2020-01-01
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - end_date: None
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - seq_len: 10
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - label_len: 5
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - pred_len: 7
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - d_model: 128
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - n_heads: 8
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - e_layers: 2
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - d_layers: 1
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - d_ff: 512
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - factor: 5
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - dropout: 0.1
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - batch_size: 32
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - epochs: 5
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - learning_rate: 0.0005
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - warmup_epochs: 5
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - patience: 30
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - train_ratio: 0.7
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - val_ratio: 0.15
+2025-12-07 14:55:09 - BTC_Informer - INFO -    - forecast_days: 30
+2025-12-07 14:55:09 - BTC_Informer - INFO - ⚙️  Device: cpu | PyTorch version: 2.1.0
+2025-12-07 14:55:09 - BTC_Informer - INFO - --- 1. DATA LOADING & ETL ---
+2025-12-07 14:55:09 - BTC_Informer - INFO - Loading data from 2020-01-01 to today...
+2025-12-07 14:55:16 - BTC_Informer - INFO - EDA completed and plots saved.
+2025-12-07 14:55:16 - BTC_Informer - INFO - 📊 Feature Engineering: Selected 13 features for modeling.
+2025-12-07 14:55:16 - BTC_Informer - INFO - Features list: ['Returns', 'Volume_Change', 'Price_Range', 'Volatility_5', 'Volatility_10', 'Volatility_20', 'MA_Returns_5', 'MA_Returns_10', 'MA_Returns_20', 'Momentum_5', 'Momentum_10', 'Momentum_20', 'RSI_14']
+2025-12-07 14:55:16 - BTC_Informer - INFO - --- 2. DATA PREPARATION & SPLITTING ---
+2025-12-07 14:55:16 - BTC_Informer - INFO - 📊 Data split details:
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Total samples:    2148
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Training set:     1503 samples (70%)
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Validation set:   322 samples (15%)
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Test set:         323 samples (15%)
+2025-12-07 14:55:16 - BTC_Informer - INFO - Dataloaders created with batch size 32.
+2025-12-07 14:55:16 - BTC_Informer - INFO - --- 3. MODEL INITIALIZATION & TRAINING ---
+2025-12-07 14:55:16 - BTC_Informer - INFO - 🧠 Transformer Architecture:
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Input features:      13
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Sequence length:     10 days
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Label length:        5 days
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Prediction horizon:  7 days
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Model dimension:     128
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Encoder layers:      2
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Decoder layers:      1
+2025-12-07 14:55:16 - BTC_Informer - INFO -    Total parameters:    714,881
+2025-12-07 14:55:17 - BTC_Informer - INFO - Starting training for 5 epochs with LR 0.0005 and patience 30...
+2025-12-07 14:55:34 - BTC_Informer - INFO - --- 4. MODEL EVALUATION ---
+2025-12-07 14:55:34 - BTC_Informer - INFO - Generating plots for prediction comparison, error analysis, and training history...
+2025-12-07 14:55:37 - BTC_Informer - INFO - --- 5. FINAL RESULTS ---
+2025-12-07 14:55:37 - BTC_Informer - INFO - 📊 Average R² (Test Set):   0.8684
+2025-12-07 14:55:37 - BTC_Informer - INFO - 📊 Average MAPE (Test Set): 3.30%
+2025-12-07 14:55:37 - BTC_Informer - INFO - 🏆 Pipeline completed.
+2025-12-07 14:55:37 - BTC_Informer - INFO - ✅ ALL ANALYSES COMPLETED SUCCESSFULLY!
