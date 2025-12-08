@@ -1,0 +1,50 @@
+2025-12-08 11:14:18 - BTC_Transformer - INFO - ⚙️  STARTING EXPERIMENT WITH CONFIGURATION:
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - use_real_data: True
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - start_date: 2020-01-01
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - end_date: None
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - seq_len: 60
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - pred_len: 45
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - hidden_dim: 128
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - num_layers: 3
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - dropout: 0.3
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - batch_size: 32
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - epochs: 5
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - learning_rate: 0.001
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - weight_decay: 1e-05
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - patience: 30
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - train_ratio: 0.7
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - val_ratio: 0.15
+2025-12-08 11:14:18 - BTC_Transformer - INFO -    - forecast_days: 30
+2025-12-08 11:14:18 - BTC_Transformer - INFO - ⚙️  Device: cpu | PyTorch version: 2.1.0
+2025-12-08 11:14:18 - BTC_Transformer - INFO - --- 1. DATA LOADING & ETL ---
+2025-12-08 11:14:18 - BTC_Transformer - INFO - Loading data from 2020-01-01 to today...
+2025-12-08 11:14:25 - BTC_Transformer - INFO - EDA completed and plots saved.
+2025-12-08 11:14:25 - BTC_Transformer - INFO - 📊 Feature Engineering: Selected 13 features for modeling.
+2025-12-08 11:14:25 - BTC_Transformer - INFO - Features list: ['Returns', 'Volume_Change', 'Price_Range', 'Volatility_5', 'Volatility_10', 'Volatility_20', 'MA_Returns_5', 'MA_Returns_10', 'MA_Returns_20', 'Momentum_5', 'Momentum_10', 'Momentum_20', 'RSI_14']
+2025-12-08 11:14:25 - BTC_Transformer - INFO - --- 2. DATA PREPARATION & SPLITTING ---
+2025-12-08 11:14:25 - BTC_Transformer - INFO - 📊 Data split details:
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Total samples:    2149
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Training set:     1504 samples (70%)
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Validation set:   322 samples (15%)
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Test set:         323 samples (15%)
+2025-12-08 11:14:25 - BTC_Transformer - INFO - Dataloaders created with batch size 32.
+2025-12-08 11:14:25 - BTC_Transformer - INFO - --- 3. MODEL INITIALIZATION & TRAINING ---
+2025-12-08 11:14:25 - BTC_Transformer - INFO - 🧠 Transformer Architecture:
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Input features:      13
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Hidden dimension:    128
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    LSTM layers:         3
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Output dimension:    45
+2025-12-08 11:14:25 - BTC_Transformer - INFO -    Total parameters:    348,845
+2025-12-08 11:14:26 - BTC_Transformer - INFO - Starting training for 5 epochs with LR 0.001 and patience 30...
+2025-12-08 11:14:46 - BTC_Transformer - INFO - --- 4. MODEL EVALUATION ---
+2025-12-08 11:14:48 - BTC_Transformer - INFO - Generating plots for prediction comparison, error analysis, and training history...
+2025-12-08 11:14:51 - BTC_Transformer - INFO - --- 5. FINAL RESULTS ---
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 📊 Average R² (Test Set):   -0.8733
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 📊 Average MAE (Test Set):  $8,786.67
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 📊 Average MAPE (Test Set): 8.35%
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 📊 Average Direction Accuracy: 49.9%
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 📊 Current Bitcoin Price:   $91,510.97
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 📊 30-day Forecast:         $101,083.74
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 📊 Expected 30-day Return:  10.46%
+2025-12-08 11:14:51 - BTC_Transformer - INFO - 🏆 Pipeline completed.
+2025-12-08 11:14:51 - BTC_Transformer - INFO - ✅ ALL ANALYSES COMPLETED SUCCESSFULLY!
