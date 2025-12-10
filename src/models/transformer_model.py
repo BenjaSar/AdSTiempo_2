@@ -1026,7 +1026,7 @@ class FeatureImportance:
         batch_count = 0
         
         with torch.no_grad():
-            for batch_x, batch_y in test_loader:
+            for batch_x, batch_y, _ in test_loader:
                 if batch_count >= max_batches:
                     break
                 batch_x, batch_y = batch_x.to(device), batch_y.to(device)
@@ -1051,7 +1051,7 @@ class FeatureImportance:
                 batch_count = 0
                 
                 with torch.no_grad():
-                    for batch_x, batch_y in test_loader:
+                    for batch_x, batch_y, _ in test_loader:
                         if batch_count >= max_batches:
                             break
                         
