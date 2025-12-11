@@ -535,7 +535,7 @@
 
         <!-- Slide 1: Portada -->
         <section class="slide title-slide" id="slide-0">
-            <img src="Uba_fiuba_ingenieria_logo.png" alt="UBA FIUBA - Facultad de Ingeniería" class="uba-logo" style="width: 400px; height: auto;">
+            <img src="assets/logoFIUBA.jpg" alt="UBA FIUBA - Facultad de Ingeniería" class="uba-logo" style="width: 400px; height: auto;">
 
             <p class="subtitle">Maestría en Inteligencia Artificial</p>
             <h1>Series de Tiempo II</h1>
@@ -614,12 +614,12 @@
                     </div>
                 </div>
                 <div class="img-container">
-                    <img src="final_st2_results_v3/01_EDA.png" alt="Análisis Exploratorio" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico EDA - Ver archivo: final_st2_results_v3/01_EDA.png</div>'">
+                    <img src="assets/final_st2_results_v3/01_EDA.png" alt="Análisis Exploratorio" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico EDA - Ver archivo: assets/final_st2_results_v3/01_EDA.png</div>'">
                 </div>
             </div>
         </section>
 
-        <!-- Slide 4: Analisis de Estacionariedad -->
+        <!-- Slide 4: Análisis de Estacionariedad -->
         <section class="slide content-slide" id="slide-3">
             <div class="slide-header">
                 <h2>Análisis de Estacionariedad</h2>
@@ -631,7 +631,7 @@
                         <p>Una serie es <strong>estacionaria</strong> cuando sus propiedades estadísticas (media, varianza) no cambian en el tiempo.</p>
                         <ul>
                             <li>Los modelos ARIMA requieren estacionariedad</li>
-                            <li>Series no estacionarias producen regresiones espurias</li>
+                            <li>Series no estacionarias producen regresiones espúrias</li>
                             <li>La diferenciación transforma la serie</li>
                         </ul>
                     </div>
@@ -826,14 +826,14 @@
                         <table style="width: 100%; margin-top: 1rem;">
                             <tr><td><strong>Hidden Dimension</strong></td><td>128 unidades</td></tr>
                             <tr><td><strong>Número de Capas</strong></td><td>3 capas apiladas</td></tr>
-                            <tr><td><strong>Dropout</strong></td><td>0.1 (regularización)</td></tr>
+                            <tr><td><strong>Dropout</strong></td><td>0.3 (regularización)</td></tr>
                             <tr><td><strong>Sequence Length</strong></td><td>60 días</td></tr>
                             <tr><td><strong>Features de Entrada</strong></td><td>71 características</td></tr>
                             <tr><td><strong>Optimizer</strong></td><td>Adam</td></tr>
                             <tr><td><strong>Learning Rate</strong></td><td>0.001</td></tr>
                         </table>
                         <div style="text-align: center; margin-top: 1.5rem; padding: 1rem; background: rgba(76, 201, 240, 0.1); border-radius: 10px;">
-                            <span style="font-size: 2rem; color: var(--accent);">376,071</span>
+                            <span style="font-size: 2rem; color: var(--accent);">367,104</span>
                             <br><span style="color: rgba(255,255,255,0.7);">parámetros entrenables</span>
                         </div>
                     </div>
@@ -942,14 +942,14 @@
                                 <td class="best-value">$818.40</td>
                                 <td class="best-value">$713.79</td>
                                 <td>-0.314</td>
-                                <td>-</td>
+                                <td>1.94%</td>
                             </tr>
                             <tr>
                                 <td>ARIMA</td>
                                 <td>$839.75</td>
                                 <td>$727.62</td>
                                 <td>-0.384</td>
-                                <td>-</td>
+                                <td>1.98%</td>
                             </tr>
                             <tr>
                                 <td>Informer</td>
@@ -976,7 +976,7 @@
                     </table>
                 </div>
                 <div class="img-container" style="max-width: 1000px;">
-                    <img src="final_st2_results_v3/comparison_7d.png" alt="Comparación 7 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: final_st2_results_v3/comparison_7d.png</div>'">
+                    <img src="assets/final_st2_results_v3/comparison_7d.png" alt="Comparación 7 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: assets/final_st2_results_v3/comparison_7d.png</div>'">
                 </div>
             </div>
         </section>
@@ -1004,14 +1004,14 @@
                                 <td class="best-value">$721.32</td>
                                 <td class="best-value">$577.28</td>
                                 <td class="best-value">0.047</td>
-                                <td>-</td>
+                                <td>1.56%</td>
                             </tr>
                             <tr>
                                 <td>ARIMA</td>
                                 <td>$744.07</td>
                                 <td>$638.19</td>
                                 <td>-0.015</td>
-                                <td>-</td>
+                                <td>1.72%</td>
                             </tr>
                             <tr>
                                 <td>LSTM</td>
@@ -1038,7 +1038,7 @@
                     </table>
                 </div>
                 <div class="img-container" style="max-width: 1000px;">
-                    <img src="final_st2_results_v3/comparison_14d.png" alt="Comparación 14 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: final_st2_results_v3/comparison_14d.png</div>'">
+                    <img src="assets/final_st2_results_v3/comparison_14d.png" alt="Comparación 14 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: assets/final_st2_results_v3/comparison_14d.png</div>'">
                 </div>
             </div>
         </section>
@@ -1066,14 +1066,14 @@
                                 <td class="best-value">$3,181.76</td>
                                 <td class="best-value">$2,159.79</td>
                                 <td>-0.311</td>
-                                <td>-</td>
+                                <td>5.38%</td>
                             </tr>
                             <tr>
                                 <td>ARIMA</td>
                                 <td>$3,446.22</td>
                                 <td>$2,392.03</td>
                                 <td>-0.537</td>
-                                <td>-</td>
+                                <td>5.96%</td>
                             </tr>
                             <tr>
                                 <td>LSTM</td>
@@ -1100,7 +1100,7 @@
                     </table>
                 </div>
                 <div class="img-container" style="max-width: 1000px;">
-                    <img src="final_st2_results_v3/comparison_30d.png" alt="Comparación 30 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: final_st2_results_v3/comparison_30d.png</div>'">
+                    <img src="assets/final_st2_results_v3/comparison_30d.png" alt="Comparación 30 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: assets/final_st2_results_v3/comparison_30d.png</div>'">
                 </div>
             </div>
         </section>
