@@ -65,10 +65,14 @@
         }
 
         .uba-logo {
-            width: 180px;
+            width: 400px;
+            max-width: 90%;
             height: auto;
             margin-bottom: 2rem;
             filter: drop-shadow(0 4px 20px rgba(255,255,255,0.3));
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 10px;
         }
 
         .title-slide h1 {
@@ -521,35 +525,28 @@
         <div class="nav-dot" data-slide="7"></div>
         <div class="nav-dot" data-slide="8"></div>
         <div class="nav-dot" data-slide="9"></div>
+        <div class="nav-dot" data-slide="10"></div>
+        <div class="nav-dot" data-slide="11"></div>
+        <div class="nav-dot" data-slide="12"></div>
+        <div class="nav-dot" data-slide="13"></div>
     </nav>
 
     <div class="slide-container" id="slideContainer">
 
         <!-- Slide 1: Portada -->
         <section class="slide title-slide" id="slide-0">
-            <svg class="uba-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#c9a227"/>
-                        <stop offset="100%" style="stop-color:#e8c547"/>
-                    </linearGradient>
-                </defs>
-                <circle cx="100" cy="100" r="95" fill="none" stroke="url(#logoGrad)" stroke-width="4"/>
-                <circle cx="100" cy="100" r="80" fill="none" stroke="url(#logoGrad)" stroke-width="2"/>
-                <text x="100" y="85" text-anchor="middle" fill="url(#logoGrad)" font-family="Playfair Display, serif" font-size="28" font-weight="700">UBA</text>
-                <text x="100" y="115" text-anchor="middle" fill="#f0f0f0" font-family="Roboto, sans-serif" font-size="12">UNIVERSIDAD DE</text>
-                <text x="100" y="130" text-anchor="middle" fill="#f0f0f0" font-family="Roboto, sans-serif" font-size="12">BUENOS AIRES</text>
-                <path d="M60 150 L100 170 L140 150" fill="none" stroke="url(#logoGrad)" stroke-width="2"/>
-            </svg>
+            <img src="Uba_fiuba_ingenieria_logo.png" alt="UBA FIUBA - Facultad de Ingeniería" class="uba-logo" style="width: 400px; height: auto;">
 
-            <p class="subtitle">Maestria en Inteligencia Artificial</p>
+            <p class="subtitle">Maestría en Inteligencia Artificial</p>
             <h1>Series de Tiempo II</h1>
             <h2>Análisis Comparativo de Modelos para<br>Predicción de Precios de Bitcoin</h2>
 
             <div class="author-info">
-                <p><strong>Docente:</strong> Camilo Argoty</p>
-                <p><strong>Periodo:</strong> 2025</p>
-                <p><strong>Facultad de Ingenieria</strong></p>
+                <p><strong>Docentes:</strong></p>
+                <p>  Camilo Argoty</p>
+                <p> Matías Alejandro Vera</p>
+                <p><strong>Período:</strong> 2025</p>
+                <p><strong>Facultad de Ingeniería</strong></p>
             </div>
 
             <div class="slide-footer">Presione ↓ o scroll para continuar</div>
@@ -558,7 +555,7 @@
         <!-- Slide 2: Introduccion -->
         <section class="slide content-slide" id="slide-1">
             <div class="slide-header">
-                <h2>Introduccion y Motivacion</h2>
+                <h2>Introducción y Motivación</h2>
             </div>
             <div class="slide-content">
                 <div class="card">
@@ -567,13 +564,13 @@
                     <ul>
                         <li>Alta volatilidad y no-estacionariedad</li>
                         <li>Dependencias temporales complejas</li>
-                        <li>Influencia de factores exogenos</li>
+                        <li>Influencia de factores exógenos</li>
                         <li>Comportamiento no-lineal</li>
                     </ul>
                 </div>
                 <div class="card">
                     <h3>Objetivo del Estudio</h3>
-                    <p>Comparar el desempeno de modelos clasicos de series de tiempo con arquitecturas de deep learning para la predicción de precios de Bitcoin en multiples horizontes temporales.</p>
+                    <p>Comparar el desempeño de modelos clásicos de series de tiempo con arquitecturas de deep learning para la predicción de precios de Bitcoin en múltiples horizontes temporales.</p>
                     <ul>
                         <li>Horizonte corto: 7 días</li>
                         <li>Horizonte medio: 14 días</li>
@@ -584,7 +581,7 @@
                     <h3>Datos Utilizados</h3>
                     <ul>
                         <li><strong>Activo:</strong> Bitcoin (BTC-USD)</li>
-                        <li><strong>Periodo:</strong> 2020-01-01 a 2025-10-31</li>
+                        <li><strong>Período:</strong> 2020-01-01 a 2025-10-31</li>
                         <li><strong>Observaciones:</strong> 1,766 días</li>
                         <li><strong>Train/Test:</strong> 80% / 20%</li>
                     </ul>
@@ -617,13 +614,94 @@
                     </div>
                 </div>
                 <div class="img-container">
-                    <img src="analisis_final_st2_v3/01_EDA.png" alt="Análisis Exploratorio" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico EDA - Ver archivo: analisis_final_st2_v3/01_EDA.png</div>'">
+                    <img src="final_st2_results_v3/01_EDA.png" alt="Análisis Exploratorio" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico EDA - Ver archivo: final_st2_results_v3/01_EDA.png</div>'">
                 </div>
             </div>
         </section>
 
-        <!-- Slide 4: Metodología -->
+        <!-- Slide 4: Analisis de Estacionariedad -->
         <section class="slide content-slide" id="slide-3">
+            <div class="slide-header">
+                <h2>Análisis de Estacionariedad</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; margin-bottom: 2rem;">
+                    <div class="card" style="max-width: 500px;">
+                        <h3>¿Por qué es importante?</h3>
+                        <p>Una serie es <strong>estacionaria</strong> cuando sus propiedades estadísticas (media, varianza) no cambian en el tiempo.</p>
+                        <ul>
+                            <li>Los modelos ARIMA requieren estacionariedad</li>
+                            <li>Series no estacionarias producen regresiones espurias</li>
+                            <li>La diferenciación transforma la serie</li>
+                        </ul>
+                    </div>
+                    <div class="card" style="max-width: 500px;">
+                        <h3>Tests Aplicados</h3>
+                        <ul>
+                            <li><strong>ADF (Augmented Dickey-Fuller):</strong> H0: Existe raíz unitaria (no estacionaria)</li>
+                            <li><strong>KPSS:</strong> H0: La serie es estacionaria</li>
+                            <li>Usamos ambos para confirmación cruzada</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card" style="max-width: 900px; width: 100%;">
+                    <h3>Resultados de los Tests</h3>
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Serie</th>
+                                <th>ADF Estadístico</th>
+                                <th>ADF p-value</th>
+                                <th>KPSS Estadístico</th>
+                                <th>Conclusión</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Precios (Close)</td>
+                                <td>-1.23</td>
+                                <td style="color: var(--danger);">0.7289</td>
+                                <td>3.42</td>
+                                <td style="color: var(--danger);"><strong>NO Estacionaria</strong></td>
+                            </tr>
+                            <tr>
+                                <td>1ra Diferencia</td>
+                                <td>-38.52</td>
+                                <td style="color: var(--success);">0.0000</td>
+                                <td>0.08</td>
+                                <td style="color: var(--success);"><strong>Estacionaria</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Log Returns</td>
+                                <td>-39.11</td>
+                                <td style="color: var(--success);">0.0000</td>
+                                <td>0.05</td>
+                                <td style="color: var(--success);"><strong>Estacionaria</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; margin-top: 2rem;">
+                    <div class="card stat-card" style="min-width: 180px;">
+                        <span class="stat-value" style="font-size: 2rem;">d = 1</span>
+                        <span class="stat-label">Orden de Diferenciación</span>
+                    </div>
+                    <div class="card stat-card" style="min-width: 180px;">
+                        <span class="stat-value" style="font-size: 2rem; color: var(--success);">p < 0.05</span>
+                        <span class="stat-label">ADF en Diferencias</span>
+                    </div>
+                    <div class="card stat-card" style="min-width: 180px;">
+                        <span class="stat-value" style="font-size: 2rem;">I(1)</span>
+                        <span class="stat-label">Serie Integrada</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 5: Metodología -->
+        <section class="slide content-slide" id="slide-4">
             <div class="slide-header">
                 <h2>Metodología</h2>
             </div>
@@ -632,12 +710,12 @@
                     <div class="method-step">
                         <div class="step-number">1</div>
                         <strong>Preprocesamiento</strong>
-                        <p style="font-size:0.85rem;">Limpieza y normalizacion</p>
+                        <p style="font-size:0.85rem;">Limpieza y normalización</p>
                     </div>
                     <div class="method-step">
                         <div class="step-number">2</div>
                         <strong>Feature Engineering</strong>
-                        <p style="font-size:0.85rem;">71 caracteristicas</p>
+                        <p style="font-size:0.85rem;">71 características</p>
                     </div>
                     <div class="method-step">
                         <div class="step-number">3</div>
@@ -651,7 +729,7 @@
                     </div>
                     <div class="method-step">
                         <div class="step-number">5</div>
-                        <strong>Evaluacion</strong>
+                        <strong>Evaluación</strong>
                         <p style="font-size:0.85rem;">RMSE, MAE, R2, MAPE</p>
                     </div>
                 </div>
@@ -673,7 +751,7 @@
                             <li>Medias móviles (5, 7, 14, 21, 30, 60)</li>
                             <li>Volatilidad (5, 10, 20, 30 días)</li>
                             <li>Momentum y ROC</li>
-                            <li>Features temporales ciclicos</li>
+                            <li>Features temporales cíclicos</li>
                             <li>Lags de precios y retornos</li>
                         </ul>
                     </div>
@@ -681,65 +759,168 @@
             </div>
         </section>
 
-        <!-- Slide 5: Modelos -->
-        <section class="slide content-slide" id="slide-4">
+        <!-- Slide 6: Modelos Estadísticos ARIMA y SARIMA -->
+        <section class="slide content-slide" id="slide-5">
             <div class="slide-header">
-                <h2>Modelos Implementados</h2>
+                <h2>Modelos Estadísticos: ARIMA y SARIMA</h2>
             </div>
-            <div class="model-grid">
-                <div class="model-card">
-                    <h4>ARIMA</h4>
-                    <p>Modelo clasico autoregresivo integrado de media móvil.</p>
-                    <ul>
-                        <li>Orden optimo: (2, 1, 2)</li>
-                        <li>AIC: 23,897.66</li>
-                        <li>Seleccion automatica via grid search</li>
-                    </ul>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; max-width: 1200px;">
+                    <div class="card" style="flex: 1; min-width: 400px; max-width: 550px;">
+                        <h3 style="color: var(--uba-gold); font-size: 1.8rem;">ARIMA</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 1rem;">AutoRegressive Integrated Moving Average</p>
+                        <p>Modelo clásico desarrollado por Box y Jenkins (1970). Combina tres componentes:</p>
+                        <ul style="margin: 1rem 0;">
+                            <li><strong>AR (p=2):</strong> Componente autoregresivo - el precio depende de los 2 días anteriores</li>
+                            <li><strong>I (d=1):</strong> Diferenciación para lograr estacionariedad</li>
+                            <li><strong>MA (q=2):</strong> Media móvil - captura shocks aleatorios pasados</li>
+                        </ul>
+                        <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
+                            <p><strong>Orden óptimo:</strong> (2, 1, 2)</p>
+                            <p><strong>AIC:</strong> 23,897.66</p>
+                            <p><strong>Selección:</strong> Grid search automático</p>
+                        </div>
+                    </div>
+                    <div class="card" style="flex: 1; min-width: 400px; max-width: 550px;">
+                        <h3 style="color: var(--uba-gold); font-size: 1.8rem;">SARIMA</h3>
+                        <p style="font-size: 1.1rem; margin-bottom: 1rem;">Seasonal ARIMA - Extensión con componente estacional</p>
+                        <p>Añade patrones estacionales al modelo ARIMA básico:</p>
+                        <ul style="margin: 1rem 0;">
+                            <li><strong>Orden no estacional:</strong> (1,1,1)</li>
+                            <li><strong>Orden estacional:</strong> (1,1,1,7)</li>
+                            <li><strong>Período:</strong> 7 días (estacionalidad semanal)</li>
+                        </ul>
+                        <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
+                            <p><strong>AIC:</strong> 23,679.88 <span style="color: var(--success);">(mejor que ARIMA)</span></p>
+                            <p><strong>Justificación:</strong> Captura patrones semanales de trading</p>
+                            <p><strong>Ventaja:</strong> Modela el comportamiento cíclico semanal</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="model-card">
-                    <h4>SARIMA</h4>
-                    <p>Extension estacional del modelo ARIMA.</p>
-                    <ul>
-                        <li>Orden: (1,1,1)(1,1,1,7)</li>
-                        <li>AIC: 23,679.88</li>
-                        <li>Estacionalidad semanal</li>
-                    </ul>
-                </div>
-                <div class="model-card">
-                    <h4>LSTM</h4>
-                    <p>Red neuronal recurrente con memoria a largo plazo.</p>
-                    <ul>
-                        <li>Hidden dim: 128</li>
-                        <li>Capas: 3</li>
-                        <li>Dropout: 0.1</li>
-                    </ul>
-                    <p class="params">376,071 parametros</p>
-                </div>
-                <div class="model-card">
-                    <h4>Transformer</h4>
-                    <p>Arquitectura basada en atencion multi-cabeza.</p>
-                    <ul>
-                        <li>d_model: 128</li>
-                        <li>Heads: 8</li>
-                        <li>Capas encoder: 3</li>
-                    </ul>
-                    <p class="params">803,463 parametros</p>
-                </div>
-                <div class="model-card">
-                    <h4>Informer</h4>
-                    <p>Transformer eficiente con ProbSparse attention.</p>
-                    <ul>
-                        <li>d_model: 512</li>
-                        <li>Factor: 5</li>
-                        <li>Complejidad: O(L log L)</li>
-                    </ul>
-                    <p class="params">7,134,215 parametros</p>
+                <div class="highlight-box" style="margin-top: 2rem; max-width: 800px;">
+                    <h3>Ventajas de los Modelos Estadísticos</h3>
+                    <p style="margin-top: 1rem;">Interpretabilidad | Bajo costo computacional | Fundamentación teórica sólida | Eficientes con pocos datos</p>
                 </div>
             </div>
         </section>
 
-        <!-- Slide 6: Resultados 7 días -->
-        <section class="slide content-slide" id="slide-5">
+        <!-- Slide 7: LSTM -->
+        <section class="slide content-slide" id="slide-6">
+            <div class="slide-header">
+                <h2>Deep Learning: LSTM</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; max-width: 1200px;">
+                    <div class="card" style="flex: 1; min-width: 350px; max-width: 500px;">
+                        <h3 style="color: var(--accent);">Long Short-Term Memory</h3>
+                        <p style="margin: 1rem 0;">Red neuronal recurrente diseñada para capturar <strong>dependencias de largo plazo</strong> en secuencias.</p>
+                        <p>Propuesta por Hochreiter & Schmidhuber (1997) para resolver el problema del <em>vanishing gradient</em>.</p>
+                        <ul style="margin-top: 1rem;">
+                            <li><strong>Forget Gate:</strong> Decide qué información olvidar</li>
+                            <li><strong>Input Gate:</strong> Decide qué información nueva almacenar</li>
+                            <li><strong>Output Gate:</strong> Decide qué información usar</li>
+                        </ul>
+                    </div>
+                    <div class="card" style="flex: 1; min-width: 350px; max-width: 500px;">
+                        <h3 style="color: var(--accent);">Arquitectura Implementada</h3>
+                        <table style="width: 100%; margin-top: 1rem;">
+                            <tr><td><strong>Hidden Dimension</strong></td><td>128 unidades</td></tr>
+                            <tr><td><strong>Número de Capas</strong></td><td>3 capas apiladas</td></tr>
+                            <tr><td><strong>Dropout</strong></td><td>0.1 (regularización)</td></tr>
+                            <tr><td><strong>Sequence Length</strong></td><td>60 días</td></tr>
+                            <tr><td><strong>Features de Entrada</strong></td><td>71 características</td></tr>
+                            <tr><td><strong>Optimizer</strong></td><td>Adam</td></tr>
+                            <tr><td><strong>Learning Rate</strong></td><td>0.001</td></tr>
+                        </table>
+                        <div style="text-align: center; margin-top: 1.5rem; padding: 1rem; background: rgba(76, 201, 240, 0.1); border-radius: 10px;">
+                            <span style="font-size: 2rem; color: var(--accent);">376,071</span>
+                            <br><span style="color: rgba(255,255,255,0.7);">parámetros entrenables</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: Transformer -->
+        <section class="slide content-slide" id="slide-7">
+            <div class="slide-header">
+                <h2>Deep Learning: Transformer</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; max-width: 1200px;">
+                    <div class="card" style="flex: 1; min-width: 350px; max-width: 500px;">
+                        <h3 style="color: var(--accent);">Attention Is All You Need</h3>
+                        <p style="margin: 1rem 0;">Arquitectura revolucionaria basada en <strong>mecanismos de atención</strong>, propuesta por Vaswani et al. (2017).</p>
+                        <p>Ventajas teóricas:</p>
+                        <ul style="margin-top: 1rem;">
+                            <li><strong>Paralelización:</strong> No requiere procesamiento secuencial</li>
+                            <li><strong>Atención global:</strong> Cada punto puede atender a cualquier otro</li>
+                            <li><strong>Multi-head:</strong> Múltiples "perspectivas" de atención</li>
+                        </ul>
+                        <p style="margin-top: 1rem; color: rgba(255,255,255,0.7);"><em>Dominante en NLP (GPT, BERT), adaptado para series de tiempo.</em></p>
+                    </div>
+                    <div class="card" style="flex: 1; min-width: 350px; max-width: 500px;">
+                        <h3 style="color: var(--accent);">Arquitectura Implementada</h3>
+                        <table style="width: 100%; margin-top: 1rem;">
+                            <tr><td><strong>d_model</strong></td><td>128 (dimensión embedding)</td></tr>
+                            <tr><td><strong>Attention Heads</strong></td><td>8 cabezas paralelas</td></tr>
+                            <tr><td><strong>Encoder Layers</strong></td><td>3 capas</td></tr>
+                            <tr><td><strong>Feed-Forward Dim</strong></td><td>512</td></tr>
+                            <tr><td><strong>Dropout</strong></td><td>0.1</td></tr>
+                            <tr><td><strong>Positional Encoding</strong></td><td>Sinusoidal</td></tr>
+                        </table>
+                        <div style="text-align: center; margin-top: 1.5rem; padding: 1rem; background: rgba(76, 201, 240, 0.1); border-radius: 10px;">
+                            <span style="font-size: 2rem; color: var(--accent);">803,463</span>
+                            <br><span style="color: rgba(255,255,255,0.7);">parámetros entrenables</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 9: Informer -->
+        <section class="slide content-slide" id="slide-8">
+            <div class="slide-header">
+                <h2>Deep Learning: Informer</h2>
+            </div>
+            <div class="slide-content" style="flex-direction: column; align-items: center;">
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; max-width: 1200px;">
+                    <div class="card" style="flex: 1; min-width: 350px; max-width: 500px;">
+                        <h3 style="color: var(--accent);">Transformer Eficiente para Series Largas</h3>
+                        <p style="margin: 1rem 0;">Propuesto por Zhou et al. (2021) en AAAI, específicamente diseñado para <strong>predicción de series de tiempo largas</strong>.</p>
+                        <p>Innovaciones clave:</p>
+                        <ul style="margin-top: 1rem;">
+                            <li><strong>ProbSparse Attention:</strong> Reduce complejidad de O(L²) a O(L log L)</li>
+                            <li><strong>Self-attention Distilling:</strong> Reduce la longitud de la secuencia progresivamente</li>
+                            <li><strong>Generative Decoder:</strong> Predicción directa de múltiples pasos</li>
+                        </ul>
+                        <p style="margin-top: 1rem; color: rgba(255,255,255,0.7);"><em>Estado del arte en benchmarks de series de tiempo (2021).</em></p>
+                    </div>
+                    <div class="card" style="flex: 1; min-width: 350px; max-width: 500px;">
+                        <h3 style="color: var(--accent);">Arquitectura Implementada</h3>
+                        <table style="width: 100%; margin-top: 1rem;">
+                            <tr><td><strong>d_model</strong></td><td>512</td></tr>
+                            <tr><td><strong>Attention Heads</strong></td><td>8</td></tr>
+                            <tr><td><strong>Encoder Layers</strong></td><td>2</td></tr>
+                            <tr><td><strong>Decoder Layers</strong></td><td>1</td></tr>
+                            <tr><td><strong>Factor (ProbSparse)</strong></td><td>5</td></tr>
+                            <tr><td><strong>Complejidad</strong></td><td>O(L log L)</td></tr>
+                        </table>
+                        <div style="text-align: center; margin-top: 1.5rem; padding: 1rem; background: rgba(76, 201, 240, 0.1); border-radius: 10px;">
+                            <span style="font-size: 2rem; color: var(--accent);">7,134,215</span>
+                            <br><span style="color: rgba(255,255,255,0.7);">parámetros entrenables</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="highlight-box" style="margin-top: 2rem; max-width: 800px; background: rgba(239, 71, 111, 0.1); border-color: var(--danger);">
+                    <h3 style="color: var(--danger);">Nota sobre Deep Learning</h3>
+                    <p style="margin-top: 0.5rem;">A pesar de su sofisticación, estos modelos requieren grandes cantidades de datos para generalizar correctamente.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 10: Resultados 7 días -->
+        <section class="slide content-slide" id="slide-9">
             <div class="slide-header">
                 <h2>Resultados: Horizonte 7 días</h2>
             </div>
@@ -795,14 +976,13 @@
                     </table>
                 </div>
                 <div class="img-container" style="max-width: 1000px;">
-                    <img src="analisis_final_st2_v3/comparison_7d.png" alt="Comparacion 7 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico de comparacion - Ver archivo: analisis_final_st2_v3/comparison_7d.png</div>'">
-                    <img src="analisis_final_st2_v3/comparison_7d.png" alt="Comparacion 7 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico de comparacion - Ver archivo: analisis_final_st2_v3/comparison_7d.png</div>'">
+                    <img src="final_st2_results_v3/comparison_7d.png" alt="Comparación 7 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: final_st2_results_v3/comparison_7d.png</div>'">
                 </div>
             </div>
         </section>
 
-        <!-- Slide 7: Resultados 14 días -->
-        <section class="slide content-slide" id="slide-6">
+        <!-- Slide 11: Resultados 14 días -->
+        <section class="slide content-slide" id="slide-10">
             <div class="slide-header">
                 <h2>Resultados: Horizonte 14 días</h2>
             </div>
@@ -858,13 +1038,13 @@
                     </table>
                 </div>
                 <div class="img-container" style="max-width: 1000px;">
-                    <img src="analisis_final_st2_v3/comparison_14d.png" alt="Comparacion 14 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico de comparacion - Ver archivo: analisis_final_st2_v3/comparison_14d.png</div>'">
+                    <img src="final_st2_results_v3/comparison_14d.png" alt="Comparación 14 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: final_st2_results_v3/comparison_14d.png</div>'">
                 </div>
             </div>
         </section>
 
-        <!-- Slide 8: Resultados 30 días -->
-        <section class="slide content-slide" id="slide-7">
+        <!-- Slide 12: Resultados 30 días -->
+        <section class="slide content-slide" id="slide-11">
             <div class="slide-header">
                 <h2>Resultados: Horizonte 30 días</h2>
             </div>
@@ -920,13 +1100,13 @@
                     </table>
                 </div>
                 <div class="img-container" style="max-width: 1000px;">
-                    <img src="analisis_final_st2_v3/comparison_30d.png" alt="Comparacion 30 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Grafico de comparacion - Ver archivo: analisis_final_st2_v3/comparison_30d.png</div>'">
+                    <img src="final_st2_results_v3/comparison_30d.png" alt="Comparación 30 días" onerror="this.parentElement.innerHTML='<div style=\'padding:2rem;text-align:center;\'>Gráfico de comparación - Ver archivo: final_st2_results_v3/comparison_30d.png</div>'">
                 </div>
             </div>
         </section>
 
-        <!-- Slide 9: Análisis comparativo -->
-        <section class="slide content-slide" id="slide-8">
+        <!-- Slide 13: Análisis comparativo -->
+        <section class="slide content-slide" id="slide-12">
             <div class="slide-header">
                 <h2>Análisis Comparativo</h2>
             </div>
@@ -938,7 +1118,7 @@
                     <div class="card">
                         <h3>Modelos Estadísticos</h3>
                         <ul>
-                            <li>Mejor desempeno en todos los horizontes</li>
+                            <li>Mejor desempeño en todos los horizontes</li>
                             <li>SARIMA supera a ARIMA consistentemente</li>
                             <li>Capturan tendencia local efectivamente</li>
                             <li>Bajo costo computacional</li>
@@ -949,7 +1129,7 @@
                         <ul>
                             <li>Alto error en predicción directa</li>
                             <li>Posible overfitting en entrenamiento</li>
-                            <li>Requieren más datos historicos</li>
+                            <li>Requieren más datos históricos</li>
                             <li>LSTM mejor que Transformer e Informer</li>
                         </ul>
                     </div>
@@ -957,27 +1137,27 @@
             </div>
         </section>
 
-        <!-- Slide 10: Conclusiones -->
-        <section class="slide conclusion-slide" id="slide-9">
+        <!-- Slide 14: Conclusiones -->
+        <section class="slide conclusion-slide" id="slide-13">
             <div class="slide-header">
                 <h2>Conclusiones</h2>
             </div>
             <div class="conclusion-grid">
                 <div class="conclusion-item">
                     <h4>Resultado Principal</h4>
-                    <p>SARIMA demostro ser el modelo más efectivo para la predicción de precios de Bitcoin en los tres horizontes evaluados, superando tanto a ARIMA como a las arquitecturas de deep learning.</p>
+                    <p>SARIMA demostró ser el modelo más efectivo para la predicción de precios de Bitcoin en los tres horizontes evaluados, superando tanto a ARIMA como a las arquitecturas de deep learning.</p>
                 </div>
                 <div class="conclusion-item">
                     <h4>Limitaciones del Deep Learning</h4>
                     <p>Los modelos de deep learning (LSTM, Transformer, Informer) mostraron alto error de predicción, probablemente debido a la cantidad limitada de datos y la alta volatilidad del activo.</p>
                 </div>
                 <div class="conclusion-item">
-                    <h4>Implicaciones Practicas</h4>
-                    <p>Para predicción de criptomonedas a corto y mediano plazo, los modelos estadísticos clasicos pueden ser más robustos y confiables que arquitecturas complejas de deep learning.</p>
+                    <h4>Implicaciones Prácticas</h4>
+                    <p>Para predicción de criptomonedas a corto y mediano plazo, los modelos estadísticos clásicos pueden ser más robustos y confiables que arquitecturas complejas de deep learning.</p>
                 </div>
                 <div class="conclusion-item">
                     <h4>Trabajo Futuro</h4>
-                    <p>Explorar modelos hibridos, incorporar variables exogenas (sentimiento, on-chain metrics), y evaluar en periodos de mercado alcista vs. bajista.</p>
+                    <p>Explorar modelos híbridos, incorporar variables exógenas (sentimiento, on-chain metrics), y evaluar en períodos de mercado alcista vs. bajista.</p>
                 </div>
             </div>
 
@@ -1000,7 +1180,7 @@
             </div>
 
             <div style="margin-top: 2rem; text-align: center;">
-                <p style="color: var(--uba-gold); font-size: 1.2rem;">Universidad de Buenos Aires - Maestria en Inteligencia Artificial</p>
+                <p style="color: var(--uba-gold); font-size: 1.2rem;">Universidad de Buenos Aires - Maestría en Inteligencia Artificial</p>
                 <p style="color: rgba(255,255,255,0.6);">Series de Tiempo II - 2025</p>
             </div>
         </section>
