@@ -30,7 +30,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import Dataset
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Import formatting utility
@@ -1040,4 +1039,302 @@ class ImprovedInformerEvaluator:
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"   ✅ Saved: {save_path}")
+        plt.close()
+
+# ============================================================================
+# FUTURE FORECASTING
+# ============================================================================
+class FutureForecaster:
+    """Generate future forecasts using Informer architecture"""
+    
+    @staticmethod
+    def forecast(model, last_sequence, scaler, seq_len, label_len, pred_len, 
+                 n_days=30, device='cpu'):
+        """
+        Recursive block forecasting
+        """
+        print_box("\nFUTURE FORECASTING")
+        print(f"🔮 Generating {n_days}-day forecast...")
+        
+        model.eval()
+        forecasts_scaled = []
+        
+        # Prepare initial sequence
+        current_seq = torch.FloatTensor(last_sequence).to(device)
+        if current_seq.dim() == 2:
+            current_seq = current_seq.unsqueeze(0) # Ensure (Batch, Seq_Len, Features)
+            
+        # CORRECTED: Get n_features from the actual data, not sequence lengths
+        n_features = current_seq.shape[-1]
+            
+        # Calculate steps needed
+        steps_needed = math.ceil(n_days / pred_len)
+        
+        with torch.no_grad():
+            for _ in range(steps_needed):
+                # 1. Prepare Encoder Input (x_enc)
+                if current_seq.shape[1] > seq_len:
+                    x_enc = current_seq[:, -seq_len:, :]
+                else:
+                    x_enc = current_seq
+
+                # 2. Prepare Decoder Input (x_dec)
+                x_dec_token = x_enc[:, -label_len:, :]
+                x_dec_zeros = torch.zeros(1, pred_len, x_enc.shape[-1]).to(device)
+                x_dec = torch.cat([x_dec_token, x_dec_zeros], dim=1)
+                
+                # 3. Predict
+                output = model(x_enc, x_dec)
+                
+                if output.dim() == 2: 
+                    output = output.unsqueeze(-1)
+
+                # 4. Handle Feature Mismatch (Reconstruct Covariates)
+                if output.shape[-1] != n_features:
+                    # Create placeholder (Batch, Pred_Len, n_features)
+                    expanded_pred = torch.zeros(output.shape[0], output.shape[1], n_features).to(device)
+                    
+                    # A. Fill Target Column (Index 0) with prediction
+                    expanded_pred[:, :, 0] = output[:, :, 0]
+                    
+                    # B. Fill Covariates (Indices 1+) with last known values
+                    # This assumes covariates (like Volatility) stay constant for the short forecast block
+                    last_known_covariates = current_seq[:, -1:, 1:] 
+                    expanded_pred[:, :, 1:] = last_known_covariates.expand(-1, output.shape[1], -1)
+                    
+                    output_for_history = expanded_pred
+                else:
+                    output_for_history = output
+
+                # Store prediction (target only)
+                pred_block = output.cpu().numpy()[0] 
+                forecasts_scaled.append(pred_block)
+                
+                # Update history for recursion
+                current_seq = torch.cat([current_seq, output_for_history], dim=1)
+                
+        # Concatenate and trim
+        forecasts_scaled = np.concatenate(forecasts_scaled, axis=0)
+        forecasts_scaled = forecasts_scaled[:n_days]
+        
+        # Inverse transform
+        dummy_array = np.zeros((len(forecasts_scaled), scaler.n_features_in_))
+        dummy_array[:, 0] = forecasts_scaled[:, 0]
+        forecasts_actual = scaler.inverse_transform(dummy_array)[:, 0]
+        
+        # Reconstruct prices from returns (Since model predicts log returns)
+        # We need the absolute last price from the *original* data to start the chain
+        # NOTE: last_sequence is (Seq_Len, Features), so we can't get the absolute price directly
+        # from it because it's scaled returns. 
+        # We assume the user will handle price reconstruction outside or we return the returns.
+        # However, looking at previous blocks, this returns the "Actual" value. 
+        # If your scaler was on Prices, this is Price. If on Returns, this is Return.
+        
+        print(f"   ✅ Forecast complete\n")
+        
+        return forecasts_actual
+    
+    @staticmethod
+    def plot_forecast(historical_data, historical_dates, forecasts, 
+                     forecast_dates, save_path='models/informer/results/06_future_forecast.png'):
+        """Visualize future forecast"""
+        # [Same plotting code as before - no changes needed here]
+        if len(historical_data.shape) > 1:
+            historical_data = historical_data[:, 0]
+            
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 12))
+        
+        # Full view
+        ax1.plot(historical_dates, historical_data, label='Historical Data', 
+                linewidth=2, color='#2E86AB', alpha=0.8)
+        ax1.plot(forecast_dates, forecasts, label='Forecast', 
+                linewidth=2.5, color='#F18F01', linestyle='--', marker='o', 
+                markersize=4, alpha=0.9)
+        
+        # Confidence interval heuristic
+        lookback = min(60, len(historical_data)-1)
+        recent_returns = np.diff(historical_data[-lookback:]) / historical_data[-lookback:-1]
+        std = np.std(recent_returns) * historical_data[-1]
+        expanding_std = std * np.sqrt(np.arange(1, len(forecasts) + 1))
+        
+        ax1.fill_between(forecast_dates, 
+                        forecasts - 2*expanding_std, 
+                        forecasts + 2*expanding_std, 
+                        alpha=0.2, color='#F18F01', 
+                        label='95% Confidence Interval')
+        
+        ax1.axvline(historical_dates.iloc[-1], color='green', linestyle=':', 
+                   linewidth=2, label='Forecast Start', alpha=0.7)
+        ax1.set_xlabel('Date', fontsize=12)
+        ax1.set_ylabel('Bitcoin Price (USD)', fontsize=12)
+        ax1.set_title('Informer Forecast - Full View', 
+                     fontsize=14, fontweight='bold')
+        ax1.legend(fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        
+        # Zoomed view
+        zoom_days = 90
+        if len(historical_dates) > zoom_days:
+            hist_date_zoom = historical_dates[-zoom_days:]
+            hist_data_zoom = historical_data[-zoom_days:]
+        else:
+            hist_date_zoom = historical_dates
+            hist_data_zoom = historical_data
+            
+        ax2.plot(hist_date_zoom, hist_data_zoom, 
+                label='Historical Data', linewidth=2, color='#2E86AB', alpha=0.8)
+        ax2.plot(forecast_dates, forecasts, label='Forecast', 
+                linewidth=2.5, color='#F18F01', linestyle='--', marker='o', 
+                markersize=4, alpha=0.9)
+        ax2.fill_between(forecast_dates, 
+                        forecasts - 2*expanding_std, 
+                        forecasts + 2*expanding_std, 
+                        alpha=0.2, color='#F18F01')
+        ax2.axvline(historical_dates.iloc[-1], color='green', linestyle=':', 
+                   linewidth=2, alpha=0.7)
+        ax2.set_xlabel('Date', fontsize=12)
+        ax2.set_ylabel('Bitcoin Price (USD)', fontsize=12)
+        ax2.set_title(f'Informer Forecast - Recent {zoom_days} Days + Forecast', 
+                     fontsize=14, fontweight='bold')
+        ax2.legend(fontsize=11)
+        ax2.grid(True, alpha=0.3)
+        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x:,.0f}'))
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"   ✅ Saved: {save_path}")
+        plt.close()
+
+
+# ============================================================================
+# FEATURE IMPORTANCE (Corrected for Informer)
+# ============================================================================
+
+class FeatureImportance:
+    """Feature importance analysis using Permutation Importance"""
+    
+    def __init__(self, model, loader, device, feature_names=None):
+        self.model = model
+        self.loader = loader
+        self.device = device
+        self.feature_names = feature_names
+        self.criterion = nn.MSELoss()
+        
+    def _get_loss(self):
+        """Calculate validation loss"""
+        self.model.eval()
+        total_loss = 0
+        
+        with torch.no_grad():
+            for x_enc, x_dec, target, _ in self.loader:
+                x_enc = x_enc.to(self.device)
+                x_dec = x_dec.to(self.device)
+                target = target.to(self.device)
+                
+                output = self.model(x_enc, x_dec)
+                
+                # Squeeze if necessary (B, Pred, 1) -> (B, Pred)
+                if output.dim() == 3 and target.dim() == 2:
+                    output = output.squeeze(-1)
+                    
+                loss = self.criterion(output, target)
+                total_loss += loss.item()
+                
+        return total_loss / len(self.loader)
+    
+    def calculate_importance(self, n_repeats=5):
+        """Compute permutation importance"""
+        print_box("\nFEATURE IMPORTANCE ANALYSIS")
+        
+        baseline_loss = self._get_loss()
+        print(f"   Baseline Loss: {baseline_loss:.6f}")
+        
+        importances = {}
+        
+        # Get number of features from the first batch
+        try:
+            # Unpack 4 values (x_enc, x_dec, target, last_price)
+            x_enc_sample, _, _, _ = next(iter(self.loader))
+            n_features = x_enc_sample.shape[-1]
+        except ValueError:
+            # Fallback if loader returns 3 values
+            x_enc_sample, _, _ = next(iter(self.loader))
+            n_features = x_enc_sample.shape[-1]
+        
+        feature_names = self.feature_names or [f"Feature {i}" for i in range(n_features)]
+        
+        print(f"   Analyzing {n_features} features ({n_repeats} permutations each)...")
+        print("─" * 81)
+        
+        for i in range(n_features):
+            feature_loss = 0
+            
+            for _ in range(n_repeats):
+                temp_loss = 0
+                self.model.eval()
+                
+                with torch.no_grad():
+                    for x_enc, x_dec, target, _ in self.loader:
+                        x_enc = x_enc.to(self.device)
+                        x_dec = x_dec.to(self.device)
+                        target = target.to(self.device)
+                        
+                        # Shuffle feature i in x_enc
+                        idx = torch.randperm(x_enc.size(0))
+                        x_enc_shuffled = x_enc.clone()
+                        x_enc_shuffled[:, :, i] = x_enc[idx, :, i]
+                        
+                        # Shuffle x_dec if it uses the same feature
+                        if x_dec.shape[-1] > i:
+                             x_dec_shuffled = x_dec.clone()
+                             x_dec_shuffled[:, :, i] = x_dec[idx, :, i]
+                        else:
+                             x_dec_shuffled = x_dec
+
+                        output = self.model(x_enc_shuffled, x_dec_shuffled)
+                        
+                        if output.dim() == 3 and target.dim() == 2:
+                            output = output.squeeze(-1)
+                            
+                        loss = self.criterion(output, target)
+                        temp_loss += loss.item()
+                
+                feature_loss += (temp_loss / len(self.loader))
+            
+            avg_loss = feature_loss / n_repeats
+            importance = avg_loss - baseline_loss
+            importances[feature_names[i]] = importance
+            
+            print(f"   {feature_names[i]:<20} | Impact: {importance:+.6f}")
+            
+        return importances
+    
+    @staticmethod
+    def plot_importance(importances, save_path='models/informer/results/07_feature_importance.png'):
+        """Plot feature importance"""
+        features = list(importances.keys())
+        scores = list(importances.values())
+        
+        # Sort
+        indices = np.argsort(scores)
+        features = [features[i] for i in indices]
+        scores = [scores[i] for i in indices]
+        
+        plt.figure(figsize=(12, 8))
+        bars = plt.barh(features, scores, color='#2E86AB', alpha=0.8)
+        
+        for i, bar in enumerate(bars):
+            if scores[i] < 0:
+                bar.set_color('#C73E1D') 
+            else:
+                bar.set_color('#2E86AB')
+                
+        plt.title('Feature Importance (Permutation)', fontsize=14, fontweight='bold')
+        plt.xlabel('Increase in MSE Loss (Higher is more important)', fontsize=12)
+        plt.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"\n   ✅ Saved: {save_path}")
         plt.close()

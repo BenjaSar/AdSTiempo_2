@@ -50,7 +50,8 @@ from src.models.transformer_model import (
     ImprovedTrainer,
     ImprovedEvaluator,
     FeatureImportance, 
-    RiskAnalyzer
+    RiskAnalyzer,
+    FutureForecaster
 )
 
 # Import formatting utility
@@ -285,18 +286,96 @@ def main():
 
     print_box() # Line break
     print("📈 Thank you for using Bitcoin Forecasting System!")
+
+    # ---------------------------------------------------------
+    # 1. GENERATE FUTURE FORECASTS (Add this block)
+    # ---------------------------------------------------------
     
-    # return {
-    #     'model': model,
-    #     'scaler': scaler,
-    #     'predictions': predictions,
-    #     'actuals': actuals,
-    #     'metrics': metrics,
-    #     'forecasts': forecasts,
-    #     'config': CONFIG,
-    #     'feature_cols': feature_cols,
-    #     'test_data': test_data
-    # }
+    # Get the last sequence from data to start the recursive prediction
+    # Shape needs to be (seq_len, n_features)
+    last_sequence_data = test_features[-CONFIG['seq_len']:]
+    
+    # Generate recursive forecasts
+    forecasts = FutureForecaster.forecast_recursive(
+        model=model,
+        last_sequence=last_sequence_data,
+        scaler=scaler, # Use the full scaler for inverse transform
+        close_idx=0,
+        n_days=CONFIG['forecast_days'],
+        device=device
+    )
+
+    results = {
+        'model': model,
+        'scaler': scaler,
+        'predictions': predictions,
+        'actuals': actuals,
+        'metrics': metrics,
+        'forecasts': forecasts,
+        'config': CONFIG,
+        'feature_cols': features_df.columns.tolist()
+    }
+
+    # Optional: Feature importance analysis
+    print_box() # Line break
+    logger.info("\n--- 6. POST-ANALYSIS OPTIONS ---")
+    response = input("Would you like to perform feature importance analysis? (y/n): ")
+    if response.lower() == 'y':
+        logger.info("Starting Feature Importance Analysis...")
+        # Use a subset of the test set for importance calculation
+        test_subset_dataset = ReturnsDataset(
+            test_features[:min(200, len(test_prices))],
+            test_prices[:min(200, len(test_prices))],
+            results['config']['seq_len'],
+            results['config']['pred_len']
+        )
+
+        # Create DataLoader for the subset
+        test_subset_loader = DataLoader(
+            test_subset_dataset,
+            batch_size=32,
+            shuffle=False
+        )
+
+        # Calculate feature importance
+        importance_scores = FeatureImportance.calculate_importance(
+            results['model'],
+            test_subset_loader,
+            torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+            results['feature_cols'],
+            n_repeats=5,
+            max_batches=10
+        )
+        
+        # Console output for importance scores
+        print("RESULTS:")
+        [print(f"   - {key}: {value:.3f}") for key, value in importance_scores.items()]
+        logger.info(f"Feature Importance Scores: {importance_scores}")
+    else:
+        logger.info("Feature importance analysis skipped.")
+    
+    # Optional: Risk analysis
+    print_box() # Line break
+    response = input("Would you like to perform risk analysis? (y/n): ")
+    if response.lower() == 'y':
+        logger.info("Starting Risk Analysis...")
+        # Get historical returns
+        historical_returns = np.diff(results['actuals'][:, 0]) / results['actuals'][:-1, 0]
+        
+        # Calculate risk metrics
+        risk_metrics = RiskAnalyzer.analyze_risk(
+            results['forecasts'],
+            results['actuals'][-1, 0],  # Last actual price
+            historical_returns
+        )
+
+        # Console output for risk metrics
+        print("RESULTS:")
+        [print(f"   - {key}: {value:.3f}") for key, value in risk_metrics.items()]
+        logger.info(f"Risk Metrics: {risk_metrics}")
+    else:
+        logger.info("Risk analysis skipped.")
+
 
 # ============================================================================
 # ENTRY POINT
@@ -309,50 +388,11 @@ if __name__ == "__main__":
     
     # Run main pipeline
     try:
-        results = main()
-        
-        # # Optional: Feature importance analysis
-        # print_box() # Line break
-        # response = input("Would you like to perform feature importance analysis? (y/n): ")
-        # if response.lower() == 'y':
-        #     # Use a subset of test data for feature importance
-        #     test_subset = results['test_data'][:min(200, len(results['test_data']))]
-        #     test_subset_dataset = TimeSeriesDataset(
-        #         test_subset,
-        #         results['config']['seq_len'],
-        #         results['config']['pred_len']
-        #     )
-        #     test_subset_loader = DataLoader(
-        #         test_subset_dataset,
-        #         batch_size=32,
-        #         shuffle=False
-        #     )
-            
-        #     importance_scores = FeatureImportance.calculate_importance(
-        #         results['model'],
-        #         test_subset_loader,
-        #         torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-        #         results['feature_cols'],
-        #         n_repeats=5,
-        #         max_batches=10
-        #     )
-        
-        # # Optional: Risk analysis
-        # print_box() # Line break
-        # response = input("Would you like to perform risk analysis? (y/n): ")
-        # if response.lower() == 'y':
-        #     # Get historical returns
-        #     historical_returns = np.diff(results['actuals'][:, 0]) / results['actuals'][:-1, 0]
-            
-        #     risk_metrics = RiskAnalyzer.analyze_risk(
-        #         results['forecasts'],
-        #         results['actuals'][-1, 0],  # Last actual price
-        #         historical_returns
-        #     )
-
+        main()
+    
         print_box("ALL ANALYSES COMPLETED SUCCESSFULLY!")
         logger.info("✅ ALL ANALYSES COMPLETED SUCCESSFULLY!")
-
+        
     except KeyboardInterrupt:
         print("\n\n⚠️  Execution interrupted by user")
         logger.warning("⚠️  Execution interrupted by user")

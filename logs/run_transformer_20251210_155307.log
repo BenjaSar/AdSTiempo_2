@@ -1,0 +1,56 @@
+2025-12-10 15:53:12 - BTC_Transformer - INFO - ⚙️  STARTING EXPERIMENT WITH CONFIGURATION:
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - use_real_data: True
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - start_date: 2020-01-01
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - end_date: None
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - seq_len: 10
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - pred_len: 45
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - d_model: 128
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - nhead: 8
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - num_layers: 2
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - dim_feedforward: 512
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - dropout: 0.1
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - batch_size: 32
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - epochs: 5
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - learning_rate: 0.0005
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - warmup_epochs: 5
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - patience: 30
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - train_ratio: 0.7
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - val_ratio: 0.15
+2025-12-10 15:53:12 - BTC_Transformer - INFO -    - forecast_days: 30
+2025-12-10 15:53:12 - BTC_Transformer - INFO - ⚙️  Device: cpu | PyTorch version: 2.1.0
+2025-12-10 15:53:12 - BTC_Transformer - INFO - --- 1. DATA LOADING & ETL ---
+2025-12-10 15:53:12 - BTC_Transformer - INFO - Loading data from 2020-01-01 to today...
+2025-12-10 15:53:33 - BTC_Transformer - INFO - EDA completed and plots saved.
+2025-12-10 15:53:33 - BTC_Transformer - INFO - 📊 Feature Engineering: Selected 13 features for modeling.
+2025-12-10 15:53:33 - BTC_Transformer - INFO - Features list: ['Returns', 'Volume_Change', 'Price_Range', 'Volatility_5', 'Volatility_10', 'Volatility_20', 'MA_Returns_5', 'MA_Returns_10', 'MA_Returns_20', 'Momentum_5', 'Momentum_10', 'Momentum_20', 'RSI_14']
+2025-12-10 15:53:33 - BTC_Transformer - INFO - --- 2. DATA PREPARATION & SPLITTING ---
+2025-12-10 15:53:33 - BTC_Transformer - INFO - 📊 Data split details:
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Total samples:    2151
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Training set:     1505 samples (70%)
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Validation set:   322 samples (15%)
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Test set:         324 samples (15%)
+2025-12-10 15:53:33 - BTC_Transformer - INFO - Dataloaders created with batch size 32.
+2025-12-10 15:53:33 - BTC_Transformer - INFO - --- 3. MODEL INITIALIZATION & TRAINING ---
+2025-12-10 15:53:33 - BTC_Transformer - INFO - 🧠 Transformer Architecture:
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Input features:      13
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Sequence length:     10 days
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Prediction horizon:  45 days
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Model dimension:     128
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Layers:              2
+2025-12-10 15:53:33 - BTC_Transformer - INFO -    Total parameters:    607,533
+2025-12-10 15:53:34 - BTC_Transformer - INFO - Starting training for 5 epochs with LR 0.0005 and patience 30...
+2025-12-10 15:53:51 - BTC_Transformer - INFO - Training finished. Best model state loaded.
+2025-12-10 15:53:51 - BTC_Transformer - INFO - --- 4. MODEL EVALUATION ---
+2025-12-10 15:53:51 - BTC_Transformer - INFO - Generating plots for prediction comparison, error analysis, and training history...
+2025-12-10 15:54:03 - BTC_Transformer - INFO - --- 5. FINAL RESULTS ---
+2025-12-10 15:54:03 - BTC_Transformer - INFO - 📊 Average R² (Test Set):   0.3048
+2025-12-10 15:54:03 - BTC_Transformer - INFO - 📊 Average MAPE (Test Set): 7.55%
+2025-12-10 15:54:03 - BTC_Transformer - INFO - 🏆 Pipeline completed.
+2025-12-10 15:54:03 - BTC_Transformer - INFO - 
+--- 6. POST-ANALYSIS OPTIONS ---
+2025-12-10 15:54:25 - BTC_Transformer - INFO - Starting Feature Importance Analysis...
+2025-12-10 15:54:35 - BTC_Transformer - INFO - Feature Importance Scores: {'Returns': 7.364226298203422e-07, 'Volume_Change': 9.392388164997101e-07, 'Price_Range': -2.309007363192339e-07, 'Volatility_5': 4.598767393160924e-07, 'Volatility_10': 9.70898610021774e-07, 'Volatility_20': -6.268421808884941e-07, 'MA_Returns_5': -3.5006242493787823e-06, 'MA_Returns_10': 2.9935811956659925e-07, 'MA_Returns_20': 1.0029309325748983e-06, 'Momentum_5': 3.606582888299008e-06, 'Momentum_10': 2.5553421841711943e-07, 'Momentum_20': -1.72300367719605e-06, 'RSI_14': 8.295600612958851e-07}
+2025-12-10 15:54:42 - BTC_Transformer - INFO - Starting Risk Analysis...
+2025-12-10 15:54:42 - BTC_Transformer - INFO - 
+📈 Thank you for using Bitcoin Forecasting System!
+2025-12-10 15:54:42 - BTC_Transformer - INFO - ✅ ALL ANALYSES COMPLETED SUCCESSFULLY!

@@ -48,9 +48,12 @@ from src.models.informer_model import (
     Informer,
     ImprovedInformerTrainer,
     ImprovedInformerEvaluator,
-    # FeatureImportance, 
-    # RiskAnalyzer
+    FutureForecaster,
+    FeatureImportance # For feature importance analysis
 )
+
+# Import Risk analysis modules
+from src.risk_analyzer import RiskAnalyzer
 
 # Import formatting utility
 from utils.misc import print_box
@@ -95,7 +98,7 @@ def main():
 
         # Training parameters
         'batch_size': 32,
-        'epochs': 5,
+        'epochs': 100,
         'learning_rate': 0.0005, # -> Slightly lower
         'warmup_epochs': 5,
         'patience': 30,          # Early stopping patience -> Increased
@@ -300,6 +303,99 @@ def main():
     print_box() # Line break
     print("📈 Thank you for using Bitcoin Forecasting System!")    
 
+    # ---------------------------------------------------------
+    # GENERATE FUTURE FORECASTS
+    # ---------------------------------------------------------
+
+    # Get the last sequence from data to start the recursive prediction
+    # Shape needs to be (seq_len, n_features)
+    last_sequence_data = test_features[-CONFIG['seq_len']:]
+    
+    # Generate forecasts
+    forecasts = FutureForecaster.forecast(
+        model=model,
+        last_sequence=last_sequence_data,
+        scaler=scaler,
+        seq_len=CONFIG['seq_len'],     # Required for Informer encoder input
+        label_len=CONFIG['label_len'], # Required for Informer decoder token
+        pred_len=CONFIG['pred_len'],   # Required for Informer decoder placeholder
+        n_days=CONFIG['forecast_days'],
+        device=device
+    )
+
+    results = {
+        'model': model,
+        'scaler': scaler,
+        'predictions': predictions,
+        'actuals': actuals,
+        'metrics': metrics,
+        'forecasts': forecasts,
+        'config': CONFIG,
+        'feature_cols': features_df.columns.tolist()
+    }
+
+    # Optional: Feature importance analysis
+    print_box() # Line break
+    logger.info("\n--- 6. POST-ANALYSIS OPTIONS ---")
+    response = input("Would you like to perform feature importance analysis? (y/n): ")
+    if response.lower() == 'y':
+        logger.info("Starting Feature Importance Analysis...")
+        # Use a subset of the test set for importance calculation
+        test_subset_dataset = InformerReturnsDataset(
+            features=test_features[:min(200, len(test_prices))],
+            prices=test_prices[:min(200, len(test_prices))],
+            seq_len=results['config']['seq_len'],
+            label_len=results['config']['seq_len'],
+            pred_len=results['config']['pred_len']
+        )
+
+        # Create DataLoader for the subset
+        test_subset_loader = DataLoader(
+            test_subset_dataset,
+            batch_size=32,
+            shuffle=False
+        )
+
+        # Calculate feature importance
+        importance_scores = FeatureImportance.calculate_importance(
+            results['model'],
+            test_subset_loader,
+            torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+            results['feature_cols'],
+            n_repeats=5,
+            max_batches=10
+        )
+        
+        # Console output for importance scores
+        print("RESULTS:")
+        [print(f"   - {key}: {value:.3f}") for key, value in importance_scores.items()]
+        logger.info(f"Feature Importance Scores: {importance_scores}")
+    else:
+        logger.info("Feature importance analysis skipped.")
+    
+    # Optional: Risk analysis
+    print_box() # Line break
+    response = input("Would you like to perform risk analysis? (y/n): ")
+    if response.lower() == 'y':
+        logger.info("Starting Risk Analysis...")
+        # Get historical returns
+        historical_returns = np.diff(results['actuals'][:, 0]) / results['actuals'][:-1, 0]
+        
+        # Calculate risk metrics
+        risk_metrics = RiskAnalyzer.analyze_risk(
+            results['forecasts'],
+            results['actuals'][-1, 0],  # Last actual price
+            historical_returns
+        )
+
+        # Console output for risk metrics
+        print("RESULTS:")
+        [print(f"   - {key}: {value:.3f}") for key, value in risk_metrics.items()]
+        logger.info(f"Risk Metrics: {risk_metrics}")
+    else:
+        logger.info("Risk analysis skipped.")
+
+        
 # ============================================================================
 # ENTRY POINT
 # ============================================================================
