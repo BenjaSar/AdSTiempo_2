@@ -37,15 +37,17 @@ from src.etl import (
     BitcoinEDA
 )
 
-# Import Informer architecture
+# Import LSTM architecture
 from src.models.lstm_model import (
     LSTMModel, 
     ModelTrainer,
     Evaluator,
-    FutureForecaster,
-    FeatureImportance, 
-    RiskAnalyzer
+    FutureForecaster
 )
+
+# Import Feature importance & Risk analysis modules
+from src.feature_importance import FeatureImportance 
+from src.risk_analyzer import RiskAnalyzer
 
 # Import formatting utility
 from utils.misc import print_box
@@ -337,10 +339,10 @@ def main():
     if response.lower() == 'y':
         # Use a subset of the test set for importance calculation
         test_subset_dataset = ReturnsDataset(
-            test_features[:min(200, len(test_prices))],
-            test_prices[:min(200, len(test_prices))],
-            results['config']['seq_len'],
-            results['config']['pred_len']
+            features=test_features[:min(200, len(test_prices))],
+            prices=test_prices[:min(200, len(test_prices))],
+            seq_len=results['config']['seq_len'],
+            pred_len=results['config']['pred_len']
         )
 
         # Create DataLoader for the subset
