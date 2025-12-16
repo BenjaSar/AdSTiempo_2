@@ -124,7 +124,7 @@ def main():
         end_date=CONFIG['end_date']
     )
     
-    # EDA (Optional)oy
+    # EDA (Optional)oy 
     eda = BitcoinEDA(df, is_real_data=is_real, output_dir='models/lstm/results/')
     eda.run_full_eda()
     logger.info("EDA completed and plots saved.")
@@ -359,7 +359,8 @@ def main():
             torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
             results['feature_cols'],
             n_repeats=5,
-            max_batches=10
+            max_batches=10,
+            output_dir='models/lstm/results/'
         )
 
         # Console output for importance scores
