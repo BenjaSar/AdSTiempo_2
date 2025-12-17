@@ -356,16 +356,23 @@ def main():
             shuffle=False
         )
 
-        # Calculate feature importance
-        importance_scores = FeatureImportance.calculate_importance(
-            results['model'],
-            test_subset_loader,
-            torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-            results['feature_cols'],
-            n_repeats=5,
-            max_batches=10
+        # 1. Instantiate the analyzer with the required context
+        analyzer = FeatureImportance(
+            model=results['model'],
+            loader=test_subset_loader,
+            device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+            feature_names=results['feature_cols']
         )
-        
+
+        # 2. Call the method
+        importance_scores = analyzer.calculate_importance(
+            n_repeats=5
+        )
+
+        # 3. Generate and save the plot
+        print("   📊 Generating feature importance plot...")
+        FeatureImportance.plot_importance(importance_scores)
+
         # Console output for importance scores
         print("RESULTS:")
         [print(f"   - {key}: {value:.3f}") for key, value in importance_scores.items()]
