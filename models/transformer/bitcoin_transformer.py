@@ -49,10 +49,12 @@ from src.models.transformer_model import (
     Transformer,
     ImprovedTrainer,
     ImprovedEvaluator,
-    FeatureImportance, 
-    RiskAnalyzer,
     FutureForecaster
 )
+
+# Import Feature importance & Risk analysis modules
+from src.feature_importance import FeatureImportance 
+from src.risk_analyzer import RiskAnalyzer
 
 # Import formatting utility
 from utils.misc import print_box
@@ -344,7 +346,8 @@ def main():
             torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
             results['feature_cols'],
             n_repeats=5,
-            max_batches=10
+            max_batches=10,
+            output_dir='models/transformer/results/'
         )
         
         # Console output for importance scores

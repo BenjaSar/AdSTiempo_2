@@ -22,6 +22,8 @@ sns.set_palette("husl")
 torch.manual_seed(42)
 np.random.seed(42)
 
+OUTPUT_DIR = None
+
 # ============================================================================
 # ADVANCED FEATURE IMPORTANCE ANALYSIS (OPTIONAL)
 # ============================================================================
@@ -31,12 +33,18 @@ class FeatureImportance:
     
     @staticmethod
     def calculate_importance(model, test_loader, device, feature_names, 
-                            n_repeats=5, max_batches=20):
+                            n_repeats=5, max_batches=20, output_dir: str=None):
         """
         Calculate feature importance using permutation method
         
         Note: This is computationally expensive. Using subset of data.
         """
+        global OUTPUT_DIR
+        if output_dir is not None:
+            OUTPUT_DIR = output_dir
+        else:
+            print("   ⚠️  OUTPUT_DIR not set. Plots will not be saved.")
+            
         print_box("\nBONUS: FEATURE IMPORTANCE ANALYSIS")
         
         print(f"🔬 Calculating feature importance (this may take a while)...")
@@ -120,6 +128,8 @@ class FeatureImportance:
     @staticmethod
     def _plot_importance(top_features):
         """Plot feature importance"""
+        global OUTPUT_DIR
+
         features, scores = zip(*top_features)
         
         fig, ax = plt.subplots(figsize=(12, 10))
@@ -136,6 +146,9 @@ class FeatureImportance:
         ax.grid(True, alpha=0.3, axis='x')
         
         plt.tight_layout()
-        plt.savefig('models/transformer/results/07_feature_importance.png', dpi=300, bbox_inches='tight')
-        print("   ✅ Saved: 07_feature_importance.png\n")
+        if OUTPUT_DIR is not None:
+            plt.savefig(f'{OUTPUT_DIR}07_feature_importance.png', dpi=300, bbox_inches='tight')
+            print("   ✅ Saved: 07_feature_importance.png\n")
+        else:
+            plt.show()
         plt.close()

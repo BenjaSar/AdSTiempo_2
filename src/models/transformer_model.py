@@ -19,7 +19,6 @@ warnings.filterwarnings('ignore')
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Import formatting utility
