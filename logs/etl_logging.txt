@@ -32,3 +32,7 @@
 2025-12-16 09:56:17 - src.etl - INFO - ✅ RUNNING FULL EDA ON REAL DATA
 2025-12-16 09:56:28 - src.etl - INFO - ✅ Created 13 features
 2025-12-16 09:56:28 - src.etl - DEBUG - Features list: ['Returns', 'Volume_Change', 'Price_Range', 'Volatility_5', 'Volatility_10', 'Volatility_20', 'MA_Returns_5', 'MA_Returns_10', 'MA_Returns_20', 'Momentum_5', 'Momentum_10', 'Momentum_20', 'RSI_14']
+2025-12-17 08:21:58 - src.etl - DEBUG - yfinance successfully imported for real Bitcoin data loading.
+2025-12-17 08:21:59 - src.etl - INFO - ✅ RUNNING FULL EDA ON REAL DATA
+2025-12-17 08:22:06 - src.etl - INFO - ✅ Created 13 features
+2025-12-17 08:22:06 - src.etl - DEBUG - Features list: ['Returns', 'Volume_Change', 'Price_Range', 'Volatility_5', 'Volatility_10', 'Volatility_20', 'MA_Returns_5', 'MA_Returns_10', 'MA_Returns_20', 'Momentum_5', 'Momentum_10', 'Momentum_20', 'RSI_14']
